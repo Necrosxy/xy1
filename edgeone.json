@@ -1,4 +1,3 @@
 {
-  "installCommand": "npm install --legacy-peer-deps",
   "nodeVersion": "22.17.1"
 }
