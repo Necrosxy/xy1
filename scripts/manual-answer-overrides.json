@@ -1,0 +1,15 @@
+{
+  "note": "The provided DOCX answer file skips single-choice answers 391-400. These overrides are inferred from the question text and should be manually verified.",
+  "single": {
+    "391": ["C"],
+    "392": ["A"],
+    "393": ["D"],
+    "394": ["A"],
+    "395": ["B"],
+    "396": ["C"],
+    "397": ["A"],
+    "398": ["D"],
+    "399": ["C"],
+    "400": ["D"]
+  }
+}
