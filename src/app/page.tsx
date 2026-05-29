@@ -42,9 +42,12 @@ export default function HomePage() {
   const startHref = `/practice?type=${scope}&mode=${mode}`;
 
   return (
-    <main className="screen">
+    <main className="screen home-screen">
       <section className="hero">
-        <h1 className="hero__title">理论知识刷题系统</h1>
+        <div className="hero__topline">
+          <h1 className="hero__title">理论知识刷题系统</h1>
+          <span>{questionBank.total} 题</span>
+        </div>
         <div className="stats-panel">
           <div className="stat">
             <span className="stat__value">{todaySummary.answered}</span>
@@ -106,11 +109,6 @@ export default function HomePage() {
         </button>
       </div>
 
-      <Link className="primary-button" href={startHref}>
-        <BookOpen aria-hidden="true" size={24} />
-        开始刷题
-      </Link>
-
       <h2 className="section-title">快速入口</h2>
       <Link className={`quick-card ${mistakes === 0 ? "is-disabled" : ""}`} href="/mistakes">
         <span className="quick-card__left">
@@ -124,6 +122,13 @@ export default function HomePage() {
         </span>
         <ChevronRight aria-hidden="true" size={22} />
       </Link>
+
+      <div className="home-fixed-start">
+        <Link className="primary-button home-start-button" href={startHref}>
+          <BookOpen aria-hidden="true" size={24} />
+          开始刷题
+        </Link>
+      </div>
     </main>
   );
 }

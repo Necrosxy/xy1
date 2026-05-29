@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   BookOpenCheck,
   CheckCircle2,
+  X,
   ChevronLeft,
   ChevronRight,
   Home,
@@ -11,7 +12,7 @@ import {
   RotateCcw,
   Star
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { findQuestion, questionsForScope, shuffleQuestions, type PracticeScope } from "@/data/questions";
 import { buildAnswerCardItems, formatAnswer, gradeQuestion, questionTypeLabel } from "@/lib/question-utils";
@@ -33,6 +34,8 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
   const [submitted, setSubmitted] = useState<{ correct: boolean } | null>(null);
   const [randomSeed, setRandomSeed] = useState(0);
   const [mistakeSessionIds, setMistakeSessionIds] = useState<string[] | null>(null);
+  const [answerCardOpen, setAnswerCardOpen] = useState(false);
+  const currentCardRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (mistakesOnly && state && mistakeSessionIds === null) {
@@ -62,6 +65,14 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
     () => buildAnswerCardItems(questions, state?.records ?? {}, index),
     [index, questions, state?.records]
   );
+
+  useEffect(() => {
+    if (!answerCardOpen) return;
+    const frame = window.requestAnimationFrame(() => {
+      currentCardRef.current?.scrollIntoView({ block: "center" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [answerCardOpen, index]);
 
   function toggleAnswer(value: AnswerValue) {
     if (submitted) return;
@@ -95,6 +106,11 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
     setIndex(nextIndex);
     setSelected(record?.selected ?? []);
     setSubmitted(record ? { correct: record.correct } : null);
+  }
+
+  function jumpToQuestion(nextIndex: number) {
+    move(nextIndex);
+    setAnswerCardOpen(false);
   }
 
   if (!state || (mistakesOnly && mistakeSessionIds === null)) {
@@ -148,14 +164,20 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
             {index + 1} / {total} · {mode === "random" ? "随机" : "顺序"}
           </span>
         </div>
-        <button
-          className={`ghost-button ${favorite ? "is-active" : ""}`}
-          onClick={() => toggleQuestionFavorite(question.id)}
-          type="button"
-          aria-label="收藏"
-        >
-          <Star aria-hidden="true" fill={favorite ? "currentColor" : "none"} size={21} />
-        </button>
+        <div className="top-bar__actions">
+          <button className="answer-card-trigger" onClick={() => setAnswerCardOpen(true)} type="button">
+            <ListChecks aria-hidden="true" size={18} />
+            题卡
+          </button>
+          <button
+            className={`ghost-button ${favorite ? "is-active" : ""}`}
+            onClick={() => toggleQuestionFavorite(question.id)}
+            type="button"
+            aria-label="收藏"
+          >
+            <Star aria-hidden="true" fill={favorite ? "currentColor" : "none"} size={21} />
+          </button>
+        </div>
       </div>
 
       <section className="question-card">
@@ -215,46 +237,61 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
         </div>
       </section>
 
-      <section className="answer-card-panel">
-        <div className="answer-card-panel__header">
-          <div>
-            <h2>答题卡</h2>
-            <span>点题号直接跳转</span>
-          </div>
-          <ListChecks aria-hidden="true" size={22} />
+      {answerCardOpen ? (
+        <div className="answer-card-overlay" role="dialog" aria-modal="true" aria-label="答题卡">
+          <button
+            aria-label="关闭答题卡"
+            className="answer-card-backdrop"
+            onClick={() => setAnswerCardOpen(false)}
+            type="button"
+          />
+          <section className="answer-card-sheet">
+            <div className="answer-card-panel__header">
+              <div>
+                <h2>答题卡</h2>
+                <span>
+                  当前 {index + 1} / {total}，点题号跳转
+                </span>
+              </div>
+              <button className="ghost-button" onClick={() => setAnswerCardOpen(false)} type="button" aria-label="关闭">
+                <X aria-hidden="true" size={20} />
+              </button>
+            </div>
+            <div className="answer-card-legend" aria-hidden="true">
+              <span>
+                <i className="legend-dot is-current" />
+                当前
+              </span>
+              <span>
+                <i className="legend-dot is-correct" />
+                答对
+              </span>
+              <span>
+                <i className="legend-dot is-wrong" />
+                答错
+              </span>
+              <span>
+                <i className="legend-dot" />
+                未答
+              </span>
+            </div>
+            <div className="answer-card-grid" aria-label="答题卡">
+              {answerCardItems.map((item) => (
+                <button
+                  aria-label={`跳转到第 ${item.index + 1} 题`}
+                  className={`answer-card-cell is-${item.status} ${item.current ? "is-current" : ""}`}
+                  key={item.questionId}
+                  onClick={() => jumpToQuestion(item.index)}
+                  ref={item.current ? (node) => void (currentCardRef.current = node) : undefined}
+                  type="button"
+                >
+                  {item.number}
+                </button>
+              ))}
+            </div>
+          </section>
         </div>
-        <div className="answer-card-legend" aria-hidden="true">
-          <span>
-            <i className="legend-dot is-current" />
-            当前
-          </span>
-          <span>
-            <i className="legend-dot is-correct" />
-            答对
-          </span>
-          <span>
-            <i className="legend-dot is-wrong" />
-            答错
-          </span>
-          <span>
-            <i className="legend-dot" />
-            未答
-          </span>
-        </div>
-        <div className="answer-card-grid" aria-label="答题卡">
-          {answerCardItems.map((item) => (
-            <button
-              aria-label={`跳转到第 ${item.index + 1} 题`}
-              className={`answer-card-cell is-${item.status} ${item.current ? "is-current" : ""}`}
-              key={item.questionId}
-              onClick={() => move(item.index)}
-              type="button"
-            >
-              {item.number}
-            </button>
-          ))}
-        </div>
-      </section>
+      ) : null}
     </main>
   );
 }
