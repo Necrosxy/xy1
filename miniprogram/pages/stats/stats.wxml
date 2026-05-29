@@ -1,0 +1,49 @@
+<view class="screen stats-screen">
+  <view class="top-bar">
+    <view class="ghost-button" bindtap="goHome">‹</view>
+    <view class="top-bar__title">
+      <text class="top-bar__heading">练习统计</text>
+      <text class="top-bar__meta">有效至 {{expiresAtText}}</text>
+    </view>
+    <view class="ghost-button" bindtap="clearRecords">↻</view>
+  </view>
+
+  <view class="metric-grid">
+    <view class="metric-card card">
+      <text class="metric-card__label">累计答题</text>
+      <text class="metric-card__value">{{summary.answered}}</text>
+    </view>
+    <view class="metric-card card">
+      <text class="metric-card__label">正确率</text>
+      <text class="metric-card__value">{{accuracyText}}</text>
+    </view>
+    <view class="metric-card card">
+      <text class="metric-card__label">答对题数</text>
+      <text class="metric-card__value">{{summary.correct}}</text>
+    </view>
+    <view class="metric-card card">
+      <text class="metric-card__label">错题数</text>
+      <text class="metric-card__value">{{mistakeCount}}</text>
+    </view>
+  </view>
+
+  <view class="section-title">题型进度</view>
+  <view class="progress-list">
+    <view wx:for="{{typeProgress}}" wx:key="type" class="progress-card card">
+      <view class="progress-card__icon {{item.iconClass}}">{{item.icon}}</view>
+      <view class="progress-card__body">
+        <text class="progress-card__title">{{item.label}}</text>
+        <text class="progress-card__meta">{{item.answered}} / {{item.total}} · 答对 {{item.correct}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="primary-button" bindtap="clearRecords">清空本机记录</view>
+
+  <view class="bottom-nav">
+    <view class="bottom-nav__item" bindtap="goHome">首页</view>
+    <view class="bottom-nav__item" bindtap="goPractice">刷题</view>
+    <view class="bottom-nav__item" bindtap="goMistakes">错题</view>
+    <view class="bottom-nav__item active">统计</view>
+  </view>
+</view>

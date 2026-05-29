@@ -460,6 +460,120 @@ a {
   margin-top: 16px;
 }
 
+.answer-card-panel {
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.answer-card-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.answer-card-panel__header h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.answer-card-panel__header span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.answer-card-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.answer-card-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid #cfd6e2;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.legend-dot.is-current {
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
+.legend-dot.is-correct {
+  border-color: var(--green);
+  background: var(--green);
+}
+
+.legend-dot.is-wrong {
+  border-color: #ef4444;
+  background: #ef4444;
+}
+
+.answer-card-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 268px;
+  overflow: auto;
+  padding: 2px 2px 4px;
+  overscroll-behavior: contain;
+}
+
+.answer-card-cell {
+  display: inline-flex;
+  min-width: 0;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d5dce8;
+  border-radius: 10px;
+  color: var(--ink);
+  background: #fff;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.answer-card-cell.is-correct {
+  border-color: var(--green);
+  color: #08765a;
+  background: var(--green-soft);
+}
+
+.answer-card-cell.is-wrong {
+  border-color: #ef4444;
+  color: #b42318;
+  background: #fff0f0;
+}
+
+.answer-card-cell.is-current {
+  border-color: var(--blue);
+  color: #fff;
+  background: var(--blue);
+  box-shadow: 0 8px 18px rgba(31, 91, 227, 0.24);
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -551,7 +665,8 @@ a {
   .type-grid,
   .mode-row,
   .metric-grid,
-  .action-row {
+  .action-row,
+  .answer-card-grid {
     gap: 10px;
   }
 
@@ -563,5 +678,17 @@ a {
   .type-card__label,
   .mode-button {
     font-size: 16px;
+  }
+
+  .answer-card-panel {
+    padding: 16px;
+  }
+
+  .answer-card-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .answer-card-cell {
+    height: 38px;
   }
 }

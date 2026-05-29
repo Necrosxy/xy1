@@ -1,0 +1,54 @@
+<view class="screen practice-screen">
+  <view class="top-bar">
+    <view class="ghost-button" bindtap="goBack">‹</view>
+    <view class="top-bar__title">
+      <text class="top-bar__heading">{{pageTitle}}</text>
+      <text class="top-bar__meta">{{positionText}}</text>
+    </view>
+    <view class="ghost-button {{favorite ? 'active' : ''}}" bindtap="toggleFavorite">☆</view>
+  </view>
+
+  <view wx:if="{{empty}}" class="empty-state card">
+    <text class="empty-state__title">{{emptyTitle}}</text>
+    <text class="empty-state__text">{{emptyText}}</text>
+  </view>
+
+  <view wx:else class="question-card card">
+    <view class="question-meta">
+      <text class="pill">{{questionTypeText}} {{question.number}}</text>
+      <text class="pill">第 {{question.sourcePage}} 页</text>
+    </view>
+    <view class="question-stem">{{question.stem}}</view>
+
+    <view class="answer-list">
+      <view
+        wx:for="{{options}}"
+        wx:key="key"
+        class="answer-option {{item.selected ? 'selected' : ''}} {{item.correct ? 'correct' : ''}} {{item.wrong ? 'wrong' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="toggleAnswer"
+      >
+        <text class="answer-option__key">{{item.label}}</text>
+        <text class="answer-option__text">{{item.text}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{submitted}}" class="result-box {{correct ? 'correct' : 'wrong'}}">
+      {{correct ? '回答正确' : '回答错误，正确答案：' + answerText}}
+    </view>
+
+    <view class="primary-button {{selected.length == 0 || submitted ? 'disabled' : ''}}" bindtap="submitAnswer">提交答案</view>
+
+    <view class="action-row">
+      <view class="secondary-button action-button {{index == 0 ? 'disabled' : ''}}" bindtap="previousQuestion">上一题</view>
+      <view class="secondary-button action-button {{index >= total - 1 ? 'disabled' : ''}}" bindtap="nextQuestion">下一题</view>
+    </view>
+  </view>
+
+  <view class="bottom-nav">
+    <view class="bottom-nav__item" bindtap="goHome">首页</view>
+    <view class="bottom-nav__item active">刷题</view>
+    <view class="bottom-nav__item" bindtap="goMistakes">错题</view>
+    <view class="bottom-nav__item" bindtap="goStats">统计</view>
+  </view>
+</view>

@@ -1,0 +1,32 @@
+<view class="screen mistakes-screen">
+  <view class="top-bar">
+    <view class="ghost-button" bindtap="goHome">‹</view>
+    <view class="top-bar__title">
+      <text class="top-bar__heading">错题复习</text>
+      <text class="top-bar__meta">{{mistakeCount}} 道待复习</text>
+    </view>
+    <view class="ghost-button" bindtap="refresh">↻</view>
+  </view>
+
+  <view wx:if="{{mistakeCount == 0}}" class="empty-state card">
+    <text class="empty-state__title">暂无错题</text>
+    <text class="empty-state__text">刷题时答错的题会自动进入这里。</text>
+  </view>
+
+  <view wx:else>
+    <view class="primary-button start-button" bindtap="startMistakes">开始错题复习</view>
+    <view class="mistake-list">
+      <view wx:for="{{mistakes}}" wx:key="id" class="mistake-card card">
+        <text class="pill">{{item.typeText}} {{item.number}}</text>
+        <text class="mistake-card__stem">{{item.stem}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-nav">
+    <view class="bottom-nav__item" bindtap="goHome">首页</view>
+    <view class="bottom-nav__item" bindtap="goPractice">刷题</view>
+    <view class="bottom-nav__item active">错题</view>
+    <view class="bottom-nav__item" bindtap="goStats">统计</view>
+  </view>
+</view>

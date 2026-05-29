@@ -1,0 +1,135 @@
+page {
+  min-height: 100vh;
+  color: #111827;
+  background: #f4f6fa;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+view,
+text {
+  box-sizing: border-box;
+}
+
+.screen {
+  min-height: 100vh;
+  padding: 0 32rpx 176rpx;
+}
+
+.section-title {
+  margin: 48rpx 0 24rpx;
+  font-size: 36rpx;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.primary-button,
+.secondary-button,
+.ghost-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.primary-button {
+  width: 100%;
+  min-height: 96rpx;
+  margin-top: 36rpx;
+  border-radius: 28rpx;
+  color: #ffffff;
+  background: #1f5be3;
+  box-shadow: 0 18rpx 34rpx rgba(31, 91, 227, 0.22);
+  font-size: 34rpx;
+}
+
+.primary-button.disabled {
+  opacity: 0.5;
+}
+
+.secondary-button {
+  min-height: 88rpx;
+  border: 1rpx solid #dfe4ec;
+  border-radius: 24rpx;
+  color: #111827;
+  background: #ffffff;
+}
+
+.secondary-button.disabled {
+  color: #a5adba;
+}
+
+.ghost-button {
+  width: 88rpx;
+  height: 88rpx;
+  border: 1rpx solid #dfe4ec;
+  border-radius: 24rpx;
+  color: #6b7280;
+  background: #ffffff;
+}
+
+.ghost-button.active {
+  color: #ef9c23;
+  background: #fff6df;
+  border-color: #ef9c23;
+}
+
+.bottom-nav {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  min-height: 128rpx;
+  padding: 12rpx 20rpx 22rpx;
+  border-top: 1rpx solid #dfe4ec;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.bottom-nav__item {
+  display: flex;
+  width: 25%;
+  min-height: 88rpx;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 25%;
+  color: #697386;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.bottom-nav__item.active {
+  color: #1f5be3;
+}
+
+.icon-blue {
+  color: #1f5be3;
+  background: #eaf1ff;
+}
+
+.icon-green {
+  color: #18a77d;
+  background: #e9fbf4;
+}
+
+.icon-purple {
+  color: #865df4;
+  background: #f1edff;
+}
+
+.icon-amber {
+  color: #ef9c23;
+  background: #fff6df;
+}
+
+.icon-pink {
+  color: #e85f8f;
+  background: #fff0f5;
+}
+
+.card {
+  border: 1rpx solid #dfe4ec;
+  border-radius: 28rpx;
+  background: #ffffff;
+  box-shadow: 0 2rpx 0 rgba(16, 24, 40, 0.03);
+}

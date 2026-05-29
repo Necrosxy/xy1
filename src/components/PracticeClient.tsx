@@ -1,11 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpenCheck, CheckCircle2, ChevronLeft, ChevronRight, Home, RotateCcw, Star } from "lucide-react";
+import {
+  BookOpenCheck,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Home,
+  ListChecks,
+  RotateCcw,
+  Star
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { findQuestion, questionsForScope, shuffleQuestions, type PracticeScope } from "@/data/questions";
-import { formatAnswer, gradeQuestion, questionTypeLabel } from "@/lib/question-utils";
+import { buildAnswerCardItems, formatAnswer, gradeQuestion, questionTypeLabel } from "@/lib/question-utils";
 import { usePracticeState } from "@/lib/use-practice-state";
 import type { AnswerValue, Question } from "@/lib/types";
 
@@ -49,6 +58,10 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
   const question = questions[index];
   const total = questions.length;
   const favorite = question ? Boolean(state?.favorites.includes(question.id)) : false;
+  const answerCardItems = useMemo(
+    () => buildAnswerCardItems(questions, state?.records ?? {}, index),
+    [index, questions, state?.records]
+  );
 
   function toggleAnswer(value: AnswerValue) {
     if (submitted) return;
@@ -77,9 +90,11 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
   }
 
   function move(nextIndex: number) {
+    const nextQuestion = questions[nextIndex];
+    const record = nextQuestion ? state?.records[nextQuestion.id] : undefined;
     setIndex(nextIndex);
-    setSelected([]);
-    setSubmitted(null);
+    setSelected(record?.selected ?? []);
+    setSubmitted(record ? { correct: record.correct } : null);
   }
 
   if (!state || (mistakesOnly && mistakeSessionIds === null)) {
@@ -197,6 +212,47 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
             下一题
             <ChevronRight aria-hidden="true" size={18} />
           </button>
+        </div>
+      </section>
+
+      <section className="answer-card-panel">
+        <div className="answer-card-panel__header">
+          <div>
+            <h2>答题卡</h2>
+            <span>点题号直接跳转</span>
+          </div>
+          <ListChecks aria-hidden="true" size={22} />
+        </div>
+        <div className="answer-card-legend" aria-hidden="true">
+          <span>
+            <i className="legend-dot is-current" />
+            当前
+          </span>
+          <span>
+            <i className="legend-dot is-correct" />
+            答对
+          </span>
+          <span>
+            <i className="legend-dot is-wrong" />
+            答错
+          </span>
+          <span>
+            <i className="legend-dot" />
+            未答
+          </span>
+        </div>
+        <div className="answer-card-grid" aria-label="答题卡">
+          {answerCardItems.map((item) => (
+            <button
+              aria-label={`跳转到第 ${item.index + 1} 题`}
+              className={`answer-card-cell is-${item.status} ${item.current ? "is-current" : ""}`}
+              key={item.questionId}
+              onClick={() => move(item.index)}
+              type="button"
+            >
+              {item.number}
+            </button>
+          ))}
         </div>
       </section>
     </main>

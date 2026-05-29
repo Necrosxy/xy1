@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { AnswerRecord, Question } from "./types";
-import { gradeQuestion, normalizeAnswer, summarizeRecords } from "./question-utils";
+import { buildAnswerCardItems, gradeQuestion, normalizeAnswer, summarizeRecords } from "./question-utils";
 
 describe("gradeQuestion", () => {
   const single: Question = {
@@ -76,5 +76,61 @@ describe("summarizeRecords", () => {
       mistakes: 1,
       accuracy: 50
     });
+  });
+});
+
+describe("buildAnswerCardItems", () => {
+  it("marks current, correct, wrong, and unanswered questions", () => {
+    const questions: Question[] = [
+      {
+        id: "judge-1",
+        type: "judge",
+        number: 1,
+        stem: "判断 1",
+        options: [],
+        answer: ["true"],
+        sourcePage: 1
+      },
+      {
+        id: "judge-2",
+        type: "judge",
+        number: 2,
+        stem: "判断 2",
+        options: [],
+        answer: ["false"],
+        sourcePage: 1
+      },
+      {
+        id: "judge-3",
+        type: "judge",
+        number: 3,
+        stem: "判断 3",
+        options: [],
+        answer: ["true"],
+        sourcePage: 1
+      }
+    ];
+    const records: Record<string, AnswerRecord> = {
+      "judge-1": {
+        questionId: "judge-1",
+        selected: ["true"],
+        correct: true,
+        answeredAt: "2026-05-29T00:00:00.000Z",
+        attempts: 1
+      },
+      "judge-2": {
+        questionId: "judge-2",
+        selected: ["true"],
+        correct: false,
+        answeredAt: "2026-05-29T00:01:00.000Z",
+        attempts: 1
+      }
+    };
+
+    expect(buildAnswerCardItems(questions, records, 1)).toEqual([
+      { questionId: "judge-1", number: 1, index: 0, status: "correct", current: false },
+      { questionId: "judge-2", number: 2, index: 1, status: "wrong", current: true },
+      { questionId: "judge-3", number: 3, index: 2, status: "unanswered", current: false }
+    ]);
   });
 });

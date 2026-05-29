@@ -2,6 +2,16 @@ import type { AnswerRecord, AnswerValue, Question, QuestionType, RecordSummary }
 
 const ANSWER_ORDER: AnswerValue[] = ["A", "B", "C", "D", "E"];
 
+export type AnswerCardStatus = "unanswered" | "correct" | "wrong";
+
+export interface AnswerCardItem {
+  questionId: string;
+  number: number;
+  index: number;
+  status: AnswerCardStatus;
+  current: boolean;
+}
+
 export function normalizeAnswer(answer: string | readonly AnswerValue[]): AnswerValue[] {
   if (typeof answer !== "string") {
     return normalizeLetters(answer);
@@ -36,6 +46,23 @@ export function summarizeRecords(records: Record<string, AnswerRecord>): RecordS
     mistakes,
     accuracy: answered === 0 ? 0 : Math.round((correct / answered) * 100)
   };
+}
+
+export function buildAnswerCardItems(
+  questions: readonly Question[],
+  records: Record<string, AnswerRecord>,
+  currentIndex: number
+): AnswerCardItem[] {
+  return questions.map((question, index) => {
+    const record = records[question.id];
+    return {
+      questionId: question.id,
+      number: index + 1,
+      index,
+      status: record ? (record.correct ? "correct" : "wrong") : "unanswered",
+      current: index === currentIndex
+    };
+  });
 }
 
 export function formatAnswer(answer: AnswerValue[]): string {

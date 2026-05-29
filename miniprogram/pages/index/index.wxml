@@ -1,0 +1,70 @@
+<view class="screen index-screen">
+  <view class="hero">
+    <view class="hero__title">理论知识刷题系统</view>
+    <view class="stats-panel">
+      <view class="stat">
+        <text class="stat__value">{{todayStats.answered}}</text>
+        <text class="stat__label">今日答题</text>
+      </view>
+      <view class="stat">
+        <text class="stat__value">{{accuracyText}}</text>
+        <text class="stat__label">正确率</text>
+      </view>
+      <view class="stat">
+        <text class="stat__value">{{totalStats.answered}}</text>
+        <text class="stat__label">累计答题</text>
+      </view>
+      <view class="stat">
+        <text class="stat__value">{{mistakeCount}}</text>
+        <text class="stat__label">错题数</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-title">选择题型</view>
+  <view class="type-grid">
+    <view
+      wx:for="{{typeCards}}"
+      wx:key="scope"
+      class="type-card card {{selectedType == item.scope ? 'active' : ''}}"
+      data-scope="{{item.scope}}"
+      bindtap="selectType"
+    >
+      <view class="type-card__dot {{selectedType == item.scope ? 'show' : ''}}"></view>
+      <view class="type-card__icon {{item.iconClass}}">{{item.icon}}</view>
+      <text class="type-card__label">{{item.label}}</text>
+      <text class="type-card__count">{{item.count}} 道</text>
+    </view>
+  </view>
+
+  <view class="section-title">练习方式</view>
+  <view class="mode-row">
+    <view class="mode-button card {{mode == 'ordered' ? 'active' : ''}}" data-mode="ordered" bindtap="selectMode">
+      顺序练习
+    </view>
+    <view class="mode-button card {{mode == 'random' ? 'active' : ''}}" data-mode="random" bindtap="selectMode">
+      随机练习
+    </view>
+  </view>
+
+  <view class="primary-button" bindtap="startPractice">开始刷题</view>
+
+  <view class="section-title">快速入口</view>
+  <view class="quick-card card {{mistakeCount == 0 ? 'disabled' : ''}}" bindtap="goMistakes">
+    <view class="quick-card__left">
+      <view class="quick-card__icon icon-pink">书</view>
+      <view class="quick-card__body">
+        <text class="quick-card__title">错题复习</text>
+        <text class="quick-card__meta">{{mistakeCount == 0 ? '暂无错题' : mistakeCount + ' 道待复习'}}</text>
+      </view>
+    </view>
+    <text class="quick-card__arrow">›</text>
+  </view>
+
+  <view class="bottom-nav">
+    <view class="bottom-nav__item active">首页</view>
+    <view class="bottom-nav__item" bindtap="startPractice">刷题</view>
+    <view class="bottom-nav__item" bindtap="goMistakes">错题</view>
+    <view class="bottom-nav__item" bindtap="goStats">统计</view>
+  </view>
+</view>
