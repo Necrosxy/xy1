@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { AnswerRecord, Question } from "./types";
-import { buildAnswerCardItems, gradeQuestion, normalizeAnswer, summarizeRecords } from "./question-utils";
+import {
+  buildAnswerCardItems,
+  correctionActionLabel,
+  gradeQuestion,
+  normalizeAnswer,
+  summarizeRecords
+} from "./question-utils";
 
 describe("gradeQuestion", () => {
   const single: Question = {
@@ -41,6 +47,12 @@ describe("gradeQuestion", () => {
     expect(gradeQuestion(multiple, ["A"])).toBe(false);
     expect(gradeQuestion(multiple, ["A", "B", "C"])).toBe(false);
   });
+
+  it("grades against a user-corrected answer when one is provided", () => {
+    expect(gradeQuestion(single, ["A"], ["A"])).toBe(true);
+    expect(gradeQuestion(single, ["B"], ["A"])).toBe(false);
+    expect(gradeQuestion(multiple, ["C", "B"], ["B", "C"])).toBe(true);
+  });
 });
 
 describe("normalizeAnswer", () => {
@@ -48,6 +60,13 @@ describe("normalizeAnswer", () => {
     expect(normalizeAnswer("√")).toEqual(["true"]);
     expect(normalizeAnswer("×")).toEqual(["false"]);
     expect(normalizeAnswer("cba")).toEqual(["A", "B", "C"]);
+  });
+});
+
+describe("correctionActionLabel", () => {
+  it("does not reveal the corrected answer in the button label", () => {
+    expect(correctionActionLabel(false)).toBe("纠正本题答案");
+    expect(correctionActionLabel(true)).toBe("已纠正");
   });
 });
 

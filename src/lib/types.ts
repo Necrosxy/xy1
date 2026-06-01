@@ -38,6 +38,7 @@ export interface PracticeState {
   records: Record<string, AnswerRecord>;
   mistakes: string[];
   favorites: string[];
+  answerCorrections: Record<string, AnswerValue[]>;
   lastPractice?: LastPractice;
 }
 

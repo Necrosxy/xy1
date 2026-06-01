@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 
 import {
+  clearAnswerCorrection,
   getPracticeState,
   markAnswer,
   resetPracticeState,
+  setAnswerCorrection,
   setLastPractice,
   toggleFavorite
 } from "./practice-state";
@@ -30,6 +32,14 @@ export function usePracticeState() {
     setState(setLastPractice(window.localStorage, lastPractice));
   }, []);
 
+  const correctQuestionAnswer = useCallback((questionId: string, answer: AnswerValue[]) => {
+    setState(setAnswerCorrection(window.localStorage, questionId, answer));
+  }, []);
+
+  const restoreQuestionAnswer = useCallback((questionId: string, originalAnswer: AnswerValue[]) => {
+    setState(clearAnswerCorrection(window.localStorage, questionId, originalAnswer));
+  }, []);
+
   const reset = useCallback(() => {
     setState(resetPracticeState(window.localStorage));
   }, []);
@@ -39,6 +49,8 @@ export function usePracticeState() {
     recordAnswer,
     toggleQuestionFavorite,
     rememberPractice,
+    correctQuestionAnswer,
+    restoreQuestionAnswer,
     reset
   };
 }

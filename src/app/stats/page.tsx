@@ -15,8 +15,6 @@ export default function StatsPage() {
   const { state, reset } = usePracticeState();
   const summary = useMemo(() => summarizeRecords(state?.records ?? {}), [state?.records]);
 
-  const expiresAt = state ? new Date(state.expiresAt).toLocaleDateString("zh-CN") : "--";
-
   function clearRecords() {
     if (window.confirm("确认清空本机练习记录？")) {
       reset();
@@ -31,7 +29,7 @@ export default function StatsPage() {
         </Link>
         <div className="top-bar__title">
           <h1>练习统计</h1>
-          <span>有效至 {expiresAt}</span>
+          <span>本机记录永久保存</span>
         </div>
         <button className="ghost-button" onClick={clearRecords} type="button" aria-label="清空记录">
           <RotateCcw aria-hidden="true" size={20} />

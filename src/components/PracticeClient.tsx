@@ -9,13 +9,21 @@ import {
   ChevronRight,
   Home,
   ListChecks,
+  PencilLine,
   RotateCcw,
   Star
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { findQuestion, questionsForScope, shuffleQuestions, type PracticeScope } from "@/data/questions";
-import { buildAnswerCardItems, formatAnswer, gradeQuestion, questionTypeLabel } from "@/lib/question-utils";
+import {
+  buildAnswerCardItems,
+  correctionActionLabel,
+  formatAnswer,
+  gradeQuestion,
+  normalizeAnswer,
+  questionTypeLabel
+} from "@/lib/question-utils";
 import { usePracticeState } from "@/lib/use-practice-state";
 import type { AnswerValue, Question } from "@/lib/types";
 
@@ -28,13 +36,22 @@ interface PracticeClientProps {
 }
 
 export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeClientProps) {
-  const { state, recordAnswer, rememberPractice, toggleQuestionFavorite } = usePracticeState();
+  const {
+    state,
+    correctQuestionAnswer,
+    recordAnswer,
+    rememberPractice,
+    restoreQuestionAnswer,
+    toggleQuestionFavorite
+  } = usePracticeState();
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<AnswerValue[]>([]);
   const [submitted, setSubmitted] = useState<{ correct: boolean } | null>(null);
   const [randomSeed, setRandomSeed] = useState(0);
   const [mistakeSessionIds, setMistakeSessionIds] = useState<string[] | null>(null);
   const [answerCardOpen, setAnswerCardOpen] = useState(false);
+  const [correctionOpen, setCorrectionOpen] = useState(false);
+  const [correctionSelected, setCorrectionSelected] = useState<AnswerValue[]>([]);
   const currentCardRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -56,11 +73,15 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
     setIndex(0);
     setSelected([]);
     setSubmitted(null);
+    setCorrectionOpen(false);
   }, [mistakesOnly, scope, mode, randomSeed]);
 
   const question = questions[index];
   const total = questions.length;
   const favorite = question ? Boolean(state?.favorites.includes(question.id)) : false;
+  const correctedAnswer = question ? state?.answerCorrections[question.id] : undefined;
+  const effectiveAnswer = correctedAnswer ?? question?.answer ?? [];
+  const hasCorrection = Boolean(correctedAnswer);
   const answerCardItems = useMemo(
     () => buildAnswerCardItems(questions, state?.records ?? {}, index),
     [index, questions, state?.records]
@@ -90,7 +111,7 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
 
   function submitAnswer() {
     if (!question || selected.length === 0) return;
-    const correct = gradeQuestion(question, selected);
+    const correct = gradeQuestion(question, selected, correctedAnswer);
     recordAnswer(question.id, selected, correct);
     rememberPractice({
       type: mistakesOnly ? "mistakes" : scope,
@@ -106,11 +127,49 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
     setIndex(nextIndex);
     setSelected(record?.selected ?? []);
     setSubmitted(record ? { correct: record.correct } : null);
+    setCorrectionOpen(false);
   }
 
   function jumpToQuestion(nextIndex: number) {
     move(nextIndex);
     setAnswerCardOpen(false);
+  }
+
+  function openCorrection() {
+    if (!question) return;
+    setCorrectionSelected(effectiveAnswer);
+    setCorrectionOpen(true);
+  }
+
+  function toggleCorrectionAnswer(value: AnswerValue) {
+    if (!question) return;
+    if (question.type === "multiple") {
+      setCorrectionSelected((current) =>
+        current.includes(value) ? current.filter((item) => item !== value) : [...current, value]
+      );
+      return;
+    }
+
+    setCorrectionSelected([value]);
+  }
+
+  function saveCorrection() {
+    if (!question || correctionSelected.length === 0) return;
+    const normalized = normalizeAnswer(correctionSelected);
+    correctQuestionAnswer(question.id, normalized);
+    if (submitted && selected.length > 0) {
+      setSubmitted({ correct: gradeQuestion(question, selected, normalized) });
+    }
+    setCorrectionOpen(false);
+  }
+
+  function restoreOriginalAnswer() {
+    if (!question) return;
+    restoreQuestionAnswer(question.id, question.answer);
+    if (submitted && selected.length > 0) {
+      setSubmitted({ correct: gradeQuestion(question, selected) });
+    }
+    setCorrectionOpen(false);
   }
 
   if (!state || (mistakesOnly && mistakeSessionIds === null)) {
@@ -185,15 +244,18 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
           <span className="pill">
             {questionTypeLabel(question.type)} {question.number}
           </span>
-          <span className="pill">第 {question.sourcePage} 页</span>
+          <span className="question-meta__right">
+            {hasCorrection ? <span className="pill pill-corrected">已纠正</span> : null}
+            <span className="pill">第 {question.sourcePage} 页</span>
+          </span>
         </div>
         <p className="question-stem">{question.stem}</p>
 
         <div className="answer-list">
           {answerOptions(question).map((option) => {
             const isSelected = selected.includes(option.key);
-            const isCorrect = submitted && question.answer.includes(option.key);
-            const isWrong = submitted && isSelected && !question.answer.includes(option.key);
+            const isCorrect = submitted && effectiveAnswer.includes(option.key);
+            const isWrong = submitted && isSelected && !effectiveAnswer.includes(option.key);
             return (
               <button
                 className={`answer-option ${isSelected ? "is-selected" : ""} ${isCorrect ? "is-correct" : ""} ${
@@ -212,9 +274,15 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
 
         {submitted ? (
           <div className={`result-box ${submitted.correct ? "is-correct" : "is-wrong"}`}>
-            {submitted.correct ? "回答正确" : `回答错误，正确答案：${formatAnswer(question.answer)}`}
+            <span>{submitted.correct ? "回答正确" : `回答错误，正确答案：${formatAnswer(effectiveAnswer)}`}</span>
+            {hasCorrection ? <small>当前使用你纠正后的答案</small> : null}
           </div>
         ) : null}
+
+        <button className="correction-button" onClick={openCorrection} type="button">
+          <PencilLine aria-hidden="true" size={18} />
+          {correctionActionLabel(hasCorrection)}
+        </button>
 
         <button className="primary-button" disabled={selected.length === 0 || Boolean(submitted)} onClick={submitAnswer}>
           <CheckCircle2 aria-hidden="true" size={22} />
@@ -288,6 +356,62 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
                   {item.number}
                 </button>
               ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {correctionOpen ? (
+        <div className="answer-card-overlay" role="dialog" aria-modal="true" aria-label="纠正答案">
+          <button
+            aria-label="关闭纠正答案"
+            className="answer-card-backdrop"
+            onClick={() => setCorrectionOpen(false)}
+            type="button"
+          />
+          <section className="answer-card-sheet correction-sheet">
+            <div className="answer-card-panel__header">
+              <div>
+                <h2>纠正答案</h2>
+                <span>保存后，本题会按你的答案判题</span>
+              </div>
+              <button className="ghost-button" onClick={() => setCorrectionOpen(false)} type="button" aria-label="关闭">
+                <X aria-hidden="true" size={20} />
+              </button>
+            </div>
+
+            <div className="correction-options">
+              {answerOptions(question).map((option) => {
+                const active = correctionSelected.includes(option.key);
+                return (
+                  <button
+                    className={`answer-option correction-option ${active ? "is-selected" : ""}`}
+                    key={option.key}
+                    onClick={() => toggleCorrectionAnswer(option.key)}
+                    type="button"
+                  >
+                    <span className="answer-option__key">{option.label}</span>
+                    <span className="answer-option__text">{option.text}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="correction-actions">
+              {hasCorrection ? (
+                <button className="secondary-button" onClick={restoreOriginalAnswer} type="button">
+                  恢复题库答案
+                </button>
+              ) : null}
+              <button
+                className="primary-button"
+                disabled={correctionSelected.length === 0}
+                onClick={saveCorrection}
+                type="button"
+              >
+                <CheckCircle2 aria-hidden="true" size={20} />
+                保存纠正
+              </button>
             </div>
           </section>
         </div>

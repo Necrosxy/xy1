@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clearAnswerCorrection,
   createInitialPracticeState,
   getPracticeState,
   markAnswer,
   resetPracticeState,
+  setAnswerCorrection,
   toggleFavorite
 } from "./practice-state";
 
@@ -37,26 +39,98 @@ class MemoryStorage implements Storage {
 }
 
 describe("practice state", () => {
-  it("creates a seven-day expiration window", () => {
+  it("creates a permanent storage window", () => {
     const now = new Date("2026-05-28T00:00:00.000Z");
     const state = createInitialPracticeState(now);
 
-    expect(state.expiresAt).toBe("2026-06-04T00:00:00.000Z");
+    expect(state.expiresAt).toBe("9999-12-31T23:59:59.999Z");
     expect(state.records).toEqual({});
     expect(state.favorites).toEqual([]);
+    expect(state.answerCorrections).toEqual({});
   });
 
-  it("resets expired local state before returning it", () => {
+  it("keeps previously expired local state instead of clearing it", () => {
     const storage = new MemoryStorage();
     const expired = createInitialPracticeState(new Date("2026-05-01T00:00:00.000Z"));
-    storage.setItem("omnimedia-practice:v1", JSON.stringify(expired));
+    const oldState = {
+      ...expired,
+      expiresAt: "2026-05-08T00:00:00.000Z",
+      records: {
+        "judge-1": {
+          questionId: "judge-1",
+          selected: ["true"],
+          correct: true,
+          answeredAt: "2026-05-01T00:00:00.000Z",
+          attempts: 1
+        }
+      }
+    };
+    storage.setItem("omnimedia-practice:v1", JSON.stringify(oldState));
 
     const state = getPracticeState(storage, new Date("2026-05-28T00:00:00.000Z"));
 
-    expect(state.expiresAt).toBe("2026-06-04T00:00:00.000Z");
+    expect(state.records["judge-1"]).toEqual(oldState.records["judge-1"]);
     expect(JSON.parse(storage.getItem("omnimedia-practice:v1") ?? "{}").expiresAt).toBe(
-      "2026-06-04T00:00:00.000Z"
+      "2026-05-08T00:00:00.000Z"
     );
+  });
+
+  it("migrates older local state without clearing records", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      "omnimedia-practice:v1",
+      JSON.stringify({
+        version: 1,
+        createdAt: "2026-05-01T00:00:00.000Z",
+        expiresAt: "9999-12-31T23:59:59.999Z",
+        records: {
+          "single-1": {
+            questionId: "single-1",
+            selected: ["A"],
+            correct: false,
+            answeredAt: "2026-05-01T00:00:00.000Z",
+            attempts: 1
+          }
+        },
+        mistakes: ["single-1"],
+        favorites: ["single-1"]
+      })
+    );
+
+    const state = getPracticeState(storage, new Date("2026-05-28T00:00:00.000Z"));
+
+    expect(state.records["single-1"]?.attempts).toBe(1);
+    expect(state.answerCorrections).toEqual({});
+    expect(JSON.parse(storage.getItem("omnimedia-practice:v1") ?? "{}").answerCorrections).toEqual({});
+  });
+
+  it("stores corrected answers and regrades existing records", () => {
+    const storage = new MemoryStorage();
+    const now = new Date("2026-05-28T00:00:00.000Z");
+    resetPracticeState(storage, now);
+
+    markAnswer(storage, "single-1", ["A"], false, now);
+    const corrected = setAnswerCorrection(storage, "single-1", ["A"], now);
+
+    expect(corrected.answerCorrections["single-1"]).toEqual(["A"]);
+    expect(corrected.records["single-1"].correct).toBe(true);
+    expect(corrected.records["single-1"].attempts).toBe(1);
+    expect(corrected.mistakes).toEqual([]);
+  });
+
+  it("removes corrected answers and regrades existing records against the original answer", () => {
+    const storage = new MemoryStorage();
+    const now = new Date("2026-05-28T00:00:00.000Z");
+    resetPracticeState(storage, now);
+
+    markAnswer(storage, "single-1", ["A"], false, now);
+    setAnswerCorrection(storage, "single-1", ["A"], now);
+    const restored = clearAnswerCorrection(storage, "single-1", ["B"], now);
+
+    expect(restored.answerCorrections["single-1"]).toBeUndefined();
+    expect(restored.records["single-1"].correct).toBe(false);
+    expect(restored.records["single-1"].attempts).toBe(1);
+    expect(restored.mistakes).toEqual(["single-1"]);
   });
 
   it("records mistakes and removes them after a correct retry", () => {

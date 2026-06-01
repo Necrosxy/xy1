@@ -28,8 +28,12 @@ export function normalizeAnswer(answer: string | readonly AnswerValue[]): Answer
   return normalizeLetters(trimmed.toUpperCase().split("") as AnswerValue[]);
 }
 
-export function gradeQuestion(question: Question, selected: AnswerValue[]): boolean {
-  const expected = normalizeAnswer(question.answer);
+export function gradeQuestion(
+  question: Question,
+  selected: AnswerValue[],
+  correctedAnswer?: readonly AnswerValue[]
+): boolean {
+  const expected = normalizeAnswer(correctedAnswer ?? question.answer);
   const actual = normalizeAnswer(selected);
   return expected.length === actual.length && expected.every((value, index) => value === actual[index]);
 }
@@ -73,6 +77,10 @@ export function formatAnswer(answer: AnswerValue[]): string {
       return value;
     })
     .join("");
+}
+
+export function correctionActionLabel(hasCorrection: boolean): string {
+  return hasCorrection ? "已纠正" : "纠正本题答案";
 }
 
 export function questionTypeLabel(type: QuestionType | "mixed" | "mistakes"): string {
