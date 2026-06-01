@@ -1,4 +1,4 @@
-import type { AnswerRecord, AnswerValue, Question, QuestionType, RecordSummary } from "./types";
+import type { AnswerRecord, AnswerValue, LastPractice, Question, QuestionType, RecordSummary } from "./types";
 
 const ANSWER_ORDER: AnswerValue[] = ["A", "B", "C", "D", "E"];
 
@@ -10,6 +10,13 @@ export interface AnswerCardItem {
   index: number;
   status: AnswerCardStatus;
   current: boolean;
+}
+
+export interface AnswerCardRange {
+  label: string;
+  startIndex: number;
+  endIndex: number;
+  active: boolean;
 }
 
 export function normalizeAnswer(answer: string | readonly AnswerValue[]): AnswerValue[] {
@@ -67,6 +74,44 @@ export function buildAnswerCardItems(
       current: index === currentIndex
     };
   });
+}
+
+export function buildAnswerCardRanges(
+  totalQuestions: number,
+  activeIndex: number,
+  pageSize = 50
+): AnswerCardRange[] {
+  if (totalQuestions <= 0) return [];
+
+  const safePageSize = Math.max(1, pageSize);
+  const safeActiveIndex = Math.min(Math.max(activeIndex, 0), totalQuestions - 1);
+  const ranges: AnswerCardRange[] = [];
+
+  for (let startIndex = 0; startIndex < totalQuestions; startIndex += safePageSize) {
+    const endIndex = Math.min(startIndex + safePageSize - 1, totalQuestions - 1);
+    ranges.push({
+      label: `${startIndex + 1}-${endIndex + 1}`,
+      startIndex,
+      endIndex,
+      active: safeActiveIndex >= startIndex && safeActiveIndex <= endIndex
+    });
+  }
+
+  return ranges;
+}
+
+export function findInitialPracticeIndex(
+  questions: readonly Question[],
+  lastPractice: LastPractice | undefined,
+  type: LastPractice["type"],
+  mode: LastPractice["mode"]
+): number {
+  if (!lastPractice?.questionId || lastPractice.type !== type || lastPractice.mode !== mode) {
+    return 0;
+  }
+
+  const savedIndex = questions.findIndex((question) => question.id === lastPractice.questionId);
+  return savedIndex >= 0 ? savedIndex : 0;
 }
 
 export function formatAnswer(answer: AnswerValue[]): string {

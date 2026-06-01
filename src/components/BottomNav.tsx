@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, BookOpen, Home, XSquare } from "lucide-react";
+import { BarChart3, BookOpen, Home, Star, XSquare } from "lucide-react";
 
 const items = [
   { href: "/", label: "首页", icon: Home },
   { href: "/practice?type=mixed&mode=ordered", label: "刷题", icon: BookOpen },
   { href: "/mistakes", label: "错题", icon: XSquare },
+  { href: "/favorites", label: "收藏", icon: Star },
   { href: "/stats", label: "统计", icon: BarChart3 }
 ];
 

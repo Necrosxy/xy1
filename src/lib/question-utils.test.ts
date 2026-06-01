@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { AnswerRecord, Question } from "./types";
 import {
+  buildAnswerCardRanges,
   buildAnswerCardItems,
   correctionActionLabel,
+  findInitialPracticeIndex,
   gradeQuestion,
   normalizeAnswer,
   summarizeRecords
@@ -151,5 +153,79 @@ describe("buildAnswerCardItems", () => {
       { questionId: "judge-2", number: 2, index: 1, status: "wrong", current: true },
       { questionId: "judge-3", number: 3, index: 2, status: "unanswered", current: false }
     ]);
+  });
+});
+
+describe("buildAnswerCardRanges", () => {
+  it("splits large answer cards into fixed-size ranges and marks the active range", () => {
+    expect(buildAnswerCardRanges(123, 76, 50)).toEqual([
+      { label: "1-50", startIndex: 0, endIndex: 49, active: false },
+      { label: "51-100", startIndex: 50, endIndex: 99, active: true },
+      { label: "101-123", startIndex: 100, endIndex: 122, active: false }
+    ]);
+  });
+
+  it("handles small and empty answer cards", () => {
+    expect(buildAnswerCardRanges(3, 0, 50)).toEqual([
+      { label: "1-3", startIndex: 0, endIndex: 2, active: true }
+    ]);
+    expect(buildAnswerCardRanges(0, 0, 50)).toEqual([]);
+  });
+});
+
+describe("findInitialPracticeIndex", () => {
+  const questions: Question[] = [
+    {
+      id: "judge-1",
+      type: "judge",
+      number: 1,
+      stem: "判断 1",
+      options: [],
+      answer: ["true"],
+      sourcePage: 1
+    },
+    {
+      id: "judge-2",
+      type: "judge",
+      number: 2,
+      stem: "判断 2",
+      options: [],
+      answer: ["false"],
+      sourcePage: 1
+    }
+  ];
+
+  it("returns the saved question index when the practice type and mode match", () => {
+    expect(
+      findInitialPracticeIndex(questions, {
+        type: "judge",
+        mode: "ordered",
+        questionId: "judge-2"
+      }, "judge", "ordered")
+    ).toBe(1);
+  });
+
+  it("falls back to the first question when the saved practice does not match", () => {
+    expect(
+      findInitialPracticeIndex(questions, {
+        type: "single",
+        mode: "ordered",
+        questionId: "judge-2"
+      }, "judge", "ordered")
+    ).toBe(0);
+    expect(
+      findInitialPracticeIndex(questions, {
+        type: "judge",
+        mode: "random",
+        questionId: "judge-2"
+      }, "judge", "ordered")
+    ).toBe(0);
+    expect(
+      findInitialPracticeIndex(questions, {
+        type: "judge",
+        mode: "ordered",
+        questionId: "judge-99"
+      }, "judge", "ordered")
+    ).toBe(0);
   });
 });

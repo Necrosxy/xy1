@@ -18,7 +18,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { findQuestion, questionsForScope, shuffleQuestions, type PracticeScope } from "@/data/questions";
 import {
   buildAnswerCardItems,
+  buildAnswerCardRanges,
   correctionActionLabel,
+  findInitialPracticeIndex,
   formatAnswer,
   gradeQuestion,
   normalizeAnswer,
@@ -28,14 +30,16 @@ import { usePracticeState } from "@/lib/use-practice-state";
 import type { AnswerValue, Question } from "@/lib/types";
 
 type PracticeMode = "ordered" | "random";
+const ANSWER_CARD_PAGE_SIZE = 50;
 
 interface PracticeClientProps {
   scope: PracticeScope;
   mode: PracticeMode;
   mistakesOnly?: boolean;
+  favoritesOnly?: boolean;
 }
 
-export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeClientProps) {
+export function PracticeClient({ scope, mode, mistakesOnly = false, favoritesOnly = false }: PracticeClientProps) {
   const {
     state,
     correctQuestionAnswer,
@@ -48,33 +52,41 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
   const [selected, setSelected] = useState<AnswerValue[]>([]);
   const [submitted, setSubmitted] = useState<{ correct: boolean } | null>(null);
   const [randomSeed, setRandomSeed] = useState(0);
-  const [mistakeSessionIds, setMistakeSessionIds] = useState<string[] | null>(null);
+  const [reviewSessionIds, setReviewSessionIds] = useState<string[] | null>(null);
   const [answerCardOpen, setAnswerCardOpen] = useState(false);
+  const [answerCardRangeIndex, setAnswerCardRangeIndex] = useState(0);
+  const [answerCardJumpValue, setAnswerCardJumpValue] = useState("");
   const [correctionOpen, setCorrectionOpen] = useState(false);
   const [correctionSelected, setCorrectionSelected] = useState<AnswerValue[]>([]);
   const currentCardRef = useRef<HTMLButtonElement | null>(null);
+  const initializedPracticeKeyRef = useRef<string | null>(null);
+  const reviewMode = mistakesOnly || favoritesOnly;
+  const practiceType = favoritesOnly ? "favorites" : mistakesOnly ? "mistakes" : scope;
+  const reviewTitle = favoritesOnly ? "收藏复习" : mistakesOnly ? "错题复习" : "开始刷题";
+  const emptyTitle = favoritesOnly ? "暂无收藏题" : mistakesOnly ? "暂无错题" : "暂无题目";
+  const practiceKey = `${practiceType}:${mode}:${reviewMode ? reviewSessionIds?.join("|") ?? "loading" : "standard"}:${randomSeed}`;
 
   useEffect(() => {
-    if (mistakesOnly && state && mistakeSessionIds === null) {
-      setMistakeSessionIds(state.mistakes);
+    if (reviewMode && state && reviewSessionIds === null) {
+      setReviewSessionIds(favoritesOnly ? state.favorites : state.mistakes);
     }
-  }, [mistakeSessionIds, mistakesOnly, state]);
+  }, [favoritesOnly, reviewMode, reviewSessionIds, state]);
 
   const questions = useMemo(() => {
-    if (mistakesOnly) {
-      const mistakeQuestions = mistakeSessionIds?.map(findQuestion).filter(Boolean) as Question[] | undefined;
-      return mistakeQuestions ?? [];
+    if (reviewMode) {
+      const reviewQuestions = reviewSessionIds?.map(findQuestion).filter(Boolean) as Question[] | undefined;
+      return reviewQuestions ?? [];
     }
     const base = questionsForScope(scope);
     return mode === "random" ? shuffleQuestions(base) : base;
-  }, [mistakeSessionIds, mistakesOnly, mode, randomSeed, scope]);
+  }, [mode, randomSeed, reviewMode, reviewSessionIds, scope]);
 
   useEffect(() => {
     setIndex(0);
     setSelected([]);
     setSubmitted(null);
     setCorrectionOpen(false);
-  }, [mistakesOnly, scope, mode, randomSeed]);
+  }, [favoritesOnly, mistakesOnly, scope, mode, randomSeed]);
 
   const question = questions[index];
   const total = questions.length;
@@ -86,6 +98,14 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
     () => buildAnswerCardItems(questions, state?.records ?? {}, index),
     [index, questions, state?.records]
   );
+  const answerCardRanges = useMemo(
+    () => buildAnswerCardRanges(total, answerCardRangeIndex, ANSWER_CARD_PAGE_SIZE),
+    [answerCardRangeIndex, total]
+  );
+  const activeAnswerCardRange = answerCardRanges.find((range) => range.active) ?? answerCardRanges[0];
+  const visibleAnswerCardItems = activeAnswerCardRange
+    ? answerCardItems.slice(activeAnswerCardRange.startIndex, activeAnswerCardRange.endIndex + 1)
+    : [];
 
   useEffect(() => {
     if (!answerCardOpen) return;
@@ -94,6 +114,28 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
     });
     return () => window.cancelAnimationFrame(frame);
   }, [answerCardOpen, index]);
+
+  useEffect(() => {
+    if (!state || questions.length === 0 || (reviewMode && reviewSessionIds === null)) return;
+    if (initializedPracticeKeyRef.current === practiceKey) return;
+
+    const initialIndex = findInitialPracticeIndex(questions, state.lastPractice, practiceType, mode);
+    const initialQuestion = showQuestion(initialIndex);
+    initializedPracticeKeyRef.current = practiceKey;
+    if (initialQuestion) {
+      rememberPractice({
+        type: practiceType,
+        mode,
+        questionId: initialQuestion.id
+      });
+    }
+  }, [mode, practiceKey, practiceType, questions, rememberPractice, reviewMode, reviewSessionIds, state]);
+
+  function openAnswerCard() {
+    setAnswerCardRangeIndex(rangeStartForQuestion(index));
+    setAnswerCardJumpValue(String(index + 1));
+    setAnswerCardOpen(true);
+  }
 
   function toggleAnswer(value: AnswerValue) {
     if (submitted) return;
@@ -114,25 +156,45 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
     const correct = gradeQuestion(question, selected, correctedAnswer);
     recordAnswer(question.id, selected, correct);
     rememberPractice({
-      type: mistakesOnly ? "mistakes" : scope,
+      type: practiceType,
       mode,
       questionId: question.id
     });
     setSubmitted({ correct });
   }
 
-  function move(nextIndex: number) {
+  function showQuestion(nextIndex: number): Question | undefined {
     const nextQuestion = questions[nextIndex];
     const record = nextQuestion ? state?.records[nextQuestion.id] : undefined;
     setIndex(nextIndex);
     setSelected(record?.selected ?? []);
     setSubmitted(record ? { correct: record.correct } : null);
     setCorrectionOpen(false);
+    return nextQuestion;
+  }
+
+  function move(nextIndex: number) {
+    const nextQuestion = showQuestion(nextIndex);
+    if (nextQuestion) {
+      rememberPractice({
+        type: practiceType,
+        mode,
+        questionId: nextQuestion.id
+      });
+    }
   }
 
   function jumpToQuestion(nextIndex: number) {
     move(nextIndex);
     setAnswerCardOpen(false);
+  }
+
+  function jumpFromAnswerCard() {
+    const parsed = Number.parseInt(answerCardJumpValue, 10);
+    if (Number.isNaN(parsed) || total <= 0) return;
+
+    const nextIndex = Math.min(Math.max(parsed - 1, 0), total - 1);
+    jumpToQuestion(nextIndex);
   }
 
   function openCorrection() {
@@ -172,12 +234,12 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
     setCorrectionOpen(false);
   }
 
-  if (!state || (mistakesOnly && mistakeSessionIds === null)) {
+  if (!state || (reviewMode && reviewSessionIds === null)) {
     return (
       <main className="screen">
         <div className="top-bar">
           <div className="top-bar__title">
-            <h1>{mistakesOnly ? "错题复习" : "开始刷题"}</h1>
+            <h1>{reviewTitle}</h1>
             <span>加载中</span>
           </div>
         </div>
@@ -193,8 +255,8 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
             <Home aria-hidden="true" size={20} />
           </Link>
           <div className="top-bar__title">
-            <h1>{mistakesOnly ? "错题复习" : "开始刷题"}</h1>
-            <span>{mistakesOnly ? "暂无错题" : "暂无题目"}</span>
+            <h1>{reviewTitle}</h1>
+            <span>{emptyTitle}</span>
           </div>
           <button className="ghost-button" onClick={() => setRandomSeed((value) => value + 1)} type="button">
             <RotateCcw aria-hidden="true" size={20} />
@@ -203,8 +265,14 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
         <section className="empty-state">
           <div>
             <BookOpenCheck aria-hidden="true" size={42} color="#1f5be3" />
-            <h2>{mistakesOnly ? "错题已清空" : "没有可练习题目"}</h2>
-            <p>{mistakesOnly ? "答错的题会自动出现在这里。" : "可以从首页重新选择题型。"}</p>
+            <h2>{favoritesOnly ? "还没有收藏题" : mistakesOnly ? "错题已清空" : "没有可练习题目"}</h2>
+            <p>
+              {favoritesOnly
+                ? "刷题时点右上角星标，题目会出现在这里。"
+                : mistakesOnly
+                  ? "答错的题会自动出现在这里。"
+                  : "可以从首页重新选择题型。"}
+            </p>
           </div>
         </section>
       </main>
@@ -218,13 +286,13 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
           <ChevronLeft aria-hidden="true" size={22} />
         </Link>
         <div className="top-bar__title">
-          <h1>{mistakesOnly ? "错题复习" : questionTypeLabel(scope)}</h1>
+          <h1>{favoritesOnly ? "收藏复习" : mistakesOnly ? "错题复习" : questionTypeLabel(scope)}</h1>
           <span>
             {index + 1} / {total} · {mode === "random" ? "随机" : "顺序"}
           </span>
         </div>
         <div className="top-bar__actions">
-          <button className="answer-card-trigger" onClick={() => setAnswerCardOpen(true)} type="button">
+          <button className="answer-card-trigger" onClick={openAnswerCard} type="button">
             <ListChecks aria-hidden="true" size={18} />
             题卡
           </button>
@@ -318,12 +386,47 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
               <div>
                 <h2>答题卡</h2>
                 <span>
-                  当前 {index + 1} / {total}，点题号跳转
+                  当前 {index + 1} / {total}，每页 {ANSWER_CARD_PAGE_SIZE} 题
                 </span>
               </div>
               <button className="ghost-button" onClick={() => setAnswerCardOpen(false)} type="button" aria-label="关闭">
                 <X aria-hidden="true" size={20} />
               </button>
+            </div>
+            <form
+              className="answer-card-jump"
+              onSubmit={(event) => {
+                event.preventDefault();
+                jumpFromAnswerCard();
+              }}
+            >
+              <label htmlFor="answer-card-jump-input">跳到</label>
+              <input
+                id="answer-card-jump-input"
+                inputMode="numeric"
+                max={total}
+                min={1}
+                onChange={(event) => setAnswerCardJumpValue(event.target.value)}
+                pattern="[0-9]*"
+                type="number"
+                value={answerCardJumpValue}
+              />
+              <span>/ {total}</span>
+              <button className="answer-card-jump__button" type="submit">
+                前往
+              </button>
+            </form>
+            <div className="answer-card-ranges" aria-label="题号范围">
+              {answerCardRanges.map((range) => (
+                <button
+                  className={`answer-card-range ${range.active ? "is-active" : ""}`}
+                  key={range.label}
+                  onClick={() => setAnswerCardRangeIndex(range.startIndex)}
+                  type="button"
+                >
+                  {range.label}
+                </button>
+              ))}
             </div>
             <div className="answer-card-legend" aria-hidden="true">
               <span>
@@ -344,7 +447,7 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
               </span>
             </div>
             <div className="answer-card-grid" aria-label="答题卡">
-              {answerCardItems.map((item) => (
+              {visibleAnswerCardItems.map((item) => (
                 <button
                   aria-label={`跳转到第 ${item.index + 1} 题`}
                   className={`answer-card-cell is-${item.status} ${item.current ? "is-current" : ""}`}
@@ -418,6 +521,10 @@ export function PracticeClient({ scope, mode, mistakesOnly = false }: PracticeCl
       ) : null}
     </main>
   );
+}
+
+function rangeStartForQuestion(index: number): number {
+  return Math.floor(Math.max(index, 0) / ANSWER_CARD_PAGE_SIZE) * ANSWER_CARD_PAGE_SIZE;
 }
 
 function answerOptions(question: Question): Array<{ key: AnswerValue; label: string; text: string }> {

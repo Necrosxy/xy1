@@ -26,7 +26,7 @@ export interface AnswerRecord {
 }
 
 export interface LastPractice {
-  type: QuestionType | "mixed" | "mistakes";
+  type: QuestionType | "mixed" | "mistakes" | "favorites";
   mode: "ordered" | "random";
   questionId?: string;
 }

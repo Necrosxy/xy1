@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, CheckSquare, ChevronRight, Grid2X2, ListOrdered, Radio, Shuffle, Target } from "lucide-react";
+import { BookOpen, CheckSquare, ChevronRight, Grid2X2, ListOrdered, Radio, Shuffle, Star, Target } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { questionBank } from "@/data/questions";
@@ -39,15 +39,17 @@ export default function HomePage() {
   }, [state?.records]);
 
   const mistakes = state?.mistakes.length ?? 0;
+  const favorites = state?.favorites.length ?? 0;
   const startHref = `/practice?type=${scope}&mode=${mode}`;
 
   return (
     <main className="screen home-screen">
       <section className="hero">
         <div className="hero__topline">
-          <h1 className="hero__title">理论知识刷题系统</h1>
-          <span>{questionBank.total} 题</span>
+          <span className="hero__eyebrow">全媒体运营师 · 三级</span>
+          <span className="hero__badge">{questionBank.total} 题</span>
         </div>
+        <h1 className="hero__title">理论知识刷题系统</h1>
         <div className="stats-panel">
           <div className="stat">
             <span className="stat__value">{todaySummary.answered}</span>
@@ -110,18 +112,33 @@ export default function HomePage() {
       </div>
 
       <h2 className="section-title">快速入口</h2>
-      <Link className={`quick-card ${mistakes === 0 ? "is-disabled" : ""}`} href="/mistakes">
-        <span className="quick-card__left">
-          <span className="quick-card__icon icon-pink">
-            <BookOpen aria-hidden="true" size={22} />
+      <div className="quick-list">
+        <Link className={`quick-card ${mistakes === 0 ? "is-disabled" : ""}`} href="/mistakes">
+          <span className="quick-card__left">
+            <span className="quick-card__icon icon-pink">
+              <BookOpen aria-hidden="true" size={22} />
+            </span>
+            <span>
+              <span className="quick-card__title">错题复习</span>
+              <span className="quick-card__meta">{mistakes === 0 ? "暂无错题" : `${mistakes} 道待复习`}</span>
+            </span>
           </span>
-          <span>
-            <span className="quick-card__title">错题复习</span>
-            <span className="quick-card__meta">{mistakes === 0 ? "暂无错题" : `${mistakes} 道待复习`}</span>
+          <ChevronRight aria-hidden="true" size={22} />
+        </Link>
+
+        <Link className={`quick-card ${favorites === 0 ? "is-disabled" : ""}`} href="/favorites">
+          <span className="quick-card__left">
+            <span className="quick-card__icon icon-amber">
+              <Star aria-hidden="true" size={22} />
+            </span>
+            <span>
+              <span className="quick-card__title">收藏复习</span>
+              <span className="quick-card__meta">{favorites === 0 ? "暂无收藏" : `${favorites} 道已收藏`}</span>
+            </span>
           </span>
-        </span>
-        <ChevronRight aria-hidden="true" size={22} />
-      </Link>
+          <ChevronRight aria-hidden="true" size={22} />
+        </Link>
+      </div>
 
       <div className="home-fixed-start">
         <Link className="primary-button home-start-button" href={startHref}>

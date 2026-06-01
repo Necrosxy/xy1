@@ -14,4 +14,14 @@ describe("home layout", () => {
     expect(css).toMatch(/\.home-fixed-start\s*{[^}]*position:\s*fixed/s);
     expect(css).toMatch(/\.home-screen\s*{[^}]*padding-bottom:/s);
   });
+
+  it("exposes a favorites review entry from home and the bottom navigation", () => {
+    const page = fs.readFileSync(path.join(root, "src/app/page.tsx"), "utf8");
+    const nav = fs.readFileSync(path.join(root, "src/components/BottomNav.tsx"), "utf8");
+
+    expect(page).toContain('href="/favorites"');
+    expect(page).toContain("收藏复习");
+    expect(nav).toContain('href: "/favorites"');
+    expect(nav).toContain('label: "收藏"');
+  });
 });
