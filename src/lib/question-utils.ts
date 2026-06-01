@@ -100,6 +100,20 @@ export function buildAnswerCardRanges(
   return ranges;
 }
 
+export function getPracticeAnswerRecord(
+  questionId: string | undefined,
+  storedRecords: Record<string, AnswerRecord>,
+  sessionRecords: Record<string, AnswerRecord>,
+  practiceType: LastPractice["type"]
+): AnswerRecord | undefined {
+  if (!questionId) return undefined;
+  if (practiceType === "mistakes" || practiceType === "favorites") {
+    return sessionRecords[questionId];
+  }
+
+  return storedRecords[questionId];
+}
+
 export function findInitialPracticeIndex(
   questions: readonly Question[],
   lastPractice: LastPractice | undefined,

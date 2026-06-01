@@ -6,6 +6,7 @@ import {
   buildAnswerCardItems,
   correctionActionLabel,
   findInitialPracticeIndex,
+  getPracticeAnswerRecord,
   gradeQuestion,
   normalizeAnswer,
   summarizeRecords
@@ -170,6 +171,48 @@ describe("buildAnswerCardRanges", () => {
       { label: "1-3", startIndex: 0, endIndex: 2, active: true }
     ]);
     expect(buildAnswerCardRanges(0, 0, 50)).toEqual([]);
+  });
+});
+
+describe("getPracticeAnswerRecord", () => {
+  const storedRecord: AnswerRecord = {
+    questionId: "single-1",
+    selected: ["A"],
+    correct: false,
+    answeredAt: "2026-05-29T00:00:00.000Z",
+    attempts: 1
+  };
+
+  const sessionRecord: AnswerRecord = {
+    questionId: "single-1",
+    selected: ["B"],
+    correct: true,
+    answeredAt: "2026-05-29T00:05:00.000Z",
+    attempts: 1
+  };
+
+  it("does not restore historical wrong answers in mistake review", () => {
+    expect(getPracticeAnswerRecord("single-1", { "single-1": storedRecord }, {}, "mistakes")).toBeUndefined();
+  });
+
+  it("uses only the current mistake review session answer after retrying", () => {
+    expect(
+      getPracticeAnswerRecord("single-1", { "single-1": storedRecord }, { "single-1": sessionRecord }, "mistakes")
+    ).toEqual(sessionRecord);
+  });
+
+  it("does not restore historical answers in favorite review", () => {
+    expect(getPracticeAnswerRecord("single-1", { "single-1": storedRecord }, {}, "favorites")).toBeUndefined();
+  });
+
+  it("uses only the current favorite review session answer after retrying", () => {
+    expect(
+      getPracticeAnswerRecord("single-1", { "single-1": storedRecord }, { "single-1": sessionRecord }, "favorites")
+    ).toEqual(sessionRecord);
+  });
+
+  it("restores stored answers in normal practice", () => {
+    expect(getPracticeAnswerRecord("single-1", { "single-1": storedRecord }, {}, "single")).toEqual(storedRecord);
   });
 });
 

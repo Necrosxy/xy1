@@ -22,12 +22,13 @@ import {
   correctionActionLabel,
   findInitialPracticeIndex,
   formatAnswer,
+  getPracticeAnswerRecord,
   gradeQuestion,
   normalizeAnswer,
   questionTypeLabel
 } from "@/lib/question-utils";
 import { usePracticeState } from "@/lib/use-practice-state";
-import type { AnswerValue, Question } from "@/lib/types";
+import type { AnswerRecord, AnswerValue, Question } from "@/lib/types";
 
 type PracticeMode = "ordered" | "random";
 const ANSWER_CARD_PAGE_SIZE = 50;
@@ -53,6 +54,7 @@ export function PracticeClient({ scope, mode, mistakesOnly = false, favoritesOnl
   const [submitted, setSubmitted] = useState<{ correct: boolean } | null>(null);
   const [randomSeed, setRandomSeed] = useState(0);
   const [reviewSessionIds, setReviewSessionIds] = useState<string[] | null>(null);
+  const [reviewSessionRecords, setReviewSessionRecords] = useState<Record<string, AnswerRecord>>({});
   const [answerCardOpen, setAnswerCardOpen] = useState(false);
   const [answerCardRangeIndex, setAnswerCardRangeIndex] = useState(0);
   const [answerCardJumpValue, setAnswerCardJumpValue] = useState("");
@@ -85,6 +87,7 @@ export function PracticeClient({ scope, mode, mistakesOnly = false, favoritesOnl
     setIndex(0);
     setSelected([]);
     setSubmitted(null);
+    setReviewSessionRecords({});
     setCorrectionOpen(false);
   }, [favoritesOnly, mistakesOnly, scope, mode, randomSeed]);
 
@@ -94,9 +97,10 @@ export function PracticeClient({ scope, mode, mistakesOnly = false, favoritesOnl
   const correctedAnswer = question ? state?.answerCorrections[question.id] : undefined;
   const effectiveAnswer = correctedAnswer ?? question?.answer ?? [];
   const hasCorrection = Boolean(correctedAnswer);
+  const answerCardRecords = reviewMode ? reviewSessionRecords : (state?.records ?? {});
   const answerCardItems = useMemo(
-    () => buildAnswerCardItems(questions, state?.records ?? {}, index),
-    [index, questions, state?.records]
+    () => buildAnswerCardItems(questions, answerCardRecords, index),
+    [answerCardRecords, index, questions]
   );
   const answerCardRanges = useMemo(
     () => buildAnswerCardRanges(total, answerCardRangeIndex, ANSWER_CARD_PAGE_SIZE),
@@ -155,6 +159,9 @@ export function PracticeClient({ scope, mode, mistakesOnly = false, favoritesOnl
     if (!question || selected.length === 0) return;
     const correct = gradeQuestion(question, selected, correctedAnswer);
     recordAnswer(question.id, selected, correct);
+    if (reviewMode) {
+      recordReviewSessionAnswer(question.id, selected, correct);
+    }
     rememberPractice({
       type: practiceType,
       mode,
@@ -165,7 +172,12 @@ export function PracticeClient({ scope, mode, mistakesOnly = false, favoritesOnl
 
   function showQuestion(nextIndex: number): Question | undefined {
     const nextQuestion = questions[nextIndex];
-    const record = nextQuestion ? state?.records[nextQuestion.id] : undefined;
+    const record = getPracticeAnswerRecord(
+      nextQuestion?.id,
+      state?.records ?? {},
+      reviewSessionRecords,
+      practiceType
+    );
     setIndex(nextIndex);
     setSelected(record?.selected ?? []);
     setSubmitted(record ? { correct: record.correct } : null);
@@ -220,7 +232,9 @@ export function PracticeClient({ scope, mode, mistakesOnly = false, favoritesOnl
     const normalized = normalizeAnswer(correctionSelected);
     correctQuestionAnswer(question.id, normalized);
     if (submitted && selected.length > 0) {
-      setSubmitted({ correct: gradeQuestion(question, selected, normalized) });
+      const correct = gradeQuestion(question, selected, normalized);
+      setSubmitted({ correct });
+      updateReviewSessionAnswerCorrectness(question.id, correct);
     }
     setCorrectionOpen(false);
   }
@@ -229,9 +243,42 @@ export function PracticeClient({ scope, mode, mistakesOnly = false, favoritesOnl
     if (!question) return;
     restoreQuestionAnswer(question.id, question.answer);
     if (submitted && selected.length > 0) {
-      setSubmitted({ correct: gradeQuestion(question, selected) });
+      const correct = gradeQuestion(question, selected);
+      setSubmitted({ correct });
+      updateReviewSessionAnswerCorrectness(question.id, correct);
     }
     setCorrectionOpen(false);
+  }
+
+  function recordReviewSessionAnswer(questionId: string, values: AnswerValue[], correct: boolean) {
+    setReviewSessionRecords((current) => {
+      const previous = current[questionId];
+      return {
+        ...current,
+        [questionId]: {
+          questionId,
+          selected: [...values],
+          correct,
+          answeredAt: new Date().toISOString(),
+          attempts: (previous?.attempts ?? 0) + 1
+        }
+      };
+    });
+  }
+
+  function updateReviewSessionAnswerCorrectness(questionId: string, correct: boolean) {
+    if (!reviewMode) return;
+    setReviewSessionRecords((current) => {
+      const record = current[questionId];
+      if (!record) return current;
+      return {
+        ...current,
+        [questionId]: {
+          ...record,
+          correct
+        }
+      };
+    });
   }
 
   if (!state || (reviewMode && reviewSessionIds === null)) {

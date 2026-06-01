@@ -12,4 +12,12 @@ describe("practice navigation", () => {
     expect(client).toContain("state.lastPractice");
     expect(client).toContain("questionId: nextQuestion.id");
   });
+
+  it("keeps mistake review answers fresh instead of replaying stored records", () => {
+    const client = fs.readFileSync(path.join(root, "src/components/PracticeClient.tsx"), "utf8");
+
+    expect(client).toContain("reviewSessionRecords");
+    expect(client).toContain("getPracticeAnswerRecord");
+    expect(client).toContain("reviewMode ? reviewSessionRecords");
+  });
 });
