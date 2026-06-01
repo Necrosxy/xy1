@@ -1127,7 +1127,35 @@ a {
 }
 
 [data-theme="dark"] .answer-option.is-correct {
+  color: var(--green);
   background: linear-gradient(180deg, rgba(72, 211, 167, 0.12), var(--green-soft));
+}
+
+[data-theme="dark"] .answer-option.is-wrong {
+  color: var(--red);
+  background: linear-gradient(180deg, rgba(255, 123, 114, 0.1), var(--red-soft));
+}
+
+[data-theme="dark"] .pill-corrected,
+[data-theme="dark"] .result-box.is-correct,
+[data-theme="dark"] .answer-card-cell.is-correct {
+  border-color: rgba(72, 211, 167, 0.45);
+  color: var(--green);
+  background: linear-gradient(180deg, rgba(72, 211, 167, 0.13), var(--green-soft));
+}
+
+[data-theme="dark"] .result-box.is-wrong,
+[data-theme="dark"] .answer-card-cell.is-wrong {
+  border-color: rgba(255, 123, 114, 0.45);
+  color: var(--red);
+  background: linear-gradient(180deg, rgba(255, 123, 114, 0.12), var(--red-soft));
+}
+
+[data-theme="dark"] .answer-card-cell.is-current {
+  border-color: var(--blue);
+  color: #fff;
+  background: var(--blue);
+  box-shadow: 0 8px 18px rgba(120, 166, 255, 0.2);
 }
 
 [data-theme="dark"] .answer-card-range.is-active {
@@ -1146,6 +1174,21 @@ a {
 [data-theme="dark"] .legend-dot {
   border-color: #40506a;
   background: #101827;
+}
+
+[data-theme="dark"] .legend-dot.is-current {
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
+[data-theme="dark"] .legend-dot.is-correct {
+  border-color: var(--green);
+  background: var(--green);
+}
+
+[data-theme="dark"] .legend-dot.is-wrong {
+  border-color: var(--red);
+  background: var(--red);
 }
 
 [data-theme="dark"] .bottom-nav__item {

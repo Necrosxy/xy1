@@ -21,4 +21,15 @@ describe("theme setup", () => {
     expect(toggle).toContain("omnimedia-theme");
     expect(toggle).toContain("dataset.theme");
   });
+
+  it("overrides hard-coded success and error states in dark mode", () => {
+    const css = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
+
+    expect(css).toContain('[data-theme="dark"] .pill-corrected');
+    expect(css).toContain('[data-theme="dark"] .result-box.is-correct');
+    expect(css).toContain('[data-theme="dark"] .result-box.is-wrong');
+    expect(css).toContain('[data-theme="dark"] .answer-card-cell.is-correct');
+    expect(css).toContain('[data-theme="dark"] .answer-card-cell.is-wrong');
+    expect(css).toContain('[data-theme="dark"] .answer-card-cell.is-current');
+  });
 });
