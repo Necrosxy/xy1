@@ -34,6 +34,7 @@ export interface LastPractice {
 export interface PracticeState {
   version: 1;
   createdAt: string;
+  updatedAt: string;
   expiresAt: string;
   records: Record<string, AnswerRecord>;
   mistakes: string[];

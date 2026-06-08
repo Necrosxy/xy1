@@ -6,6 +6,7 @@ import {
   clearAnswerCorrection,
   getPracticeState,
   markAnswer,
+  replacePracticeState,
   resetPracticeState,
   setAnswerCorrection,
   setLastPractice,
@@ -44,6 +45,10 @@ export function usePracticeState() {
     setState(resetPracticeState(window.localStorage));
   }, []);
 
+  const replaceState = useCallback((nextState: PracticeState) => {
+    setState(replacePracticeState(window.localStorage, nextState));
+  }, []);
+
   return {
     state,
     recordAnswer,
@@ -51,6 +56,7 @@ export function usePracticeState() {
     rememberPractice,
     correctQuestionAnswer,
     restoreQuestionAnswer,
+    replaceState,
     reset
   };
 }

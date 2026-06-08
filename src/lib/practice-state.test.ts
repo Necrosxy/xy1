@@ -5,6 +5,7 @@ import {
   createInitialPracticeState,
   getPracticeState,
   markAnswer,
+  replacePracticeState,
   resetPracticeState,
   setAnswerCorrection,
   toggleFavorite
@@ -44,6 +45,7 @@ describe("practice state", () => {
     const state = createInitialPracticeState(now);
 
     expect(state.expiresAt).toBe("9999-12-31T23:59:59.999Z");
+    expect(state.updatedAt).toBe("2026-05-28T00:00:00.000Z");
     expect(state.records).toEqual({});
     expect(state.favorites).toEqual([]);
     expect(state.answerCorrections).toEqual({});
@@ -154,5 +156,17 @@ describe("practice state", () => {
 
     expect(toggleFavorite(storage, "judge-1", now).favorites).toEqual(["judge-1"]);
     expect(toggleFavorite(storage, "judge-1", now).favorites).toEqual([]);
+  });
+
+  it("replaces local state after cloud sync", () => {
+    const storage = new MemoryStorage();
+    const state = {
+      ...createInitialPracticeState(new Date("2026-06-01T00:00:00.000Z")),
+      favorites: ["judge-1"]
+    };
+
+    replacePracticeState(storage, state);
+
+    expect(getPracticeState(storage).favorites).toEqual(["judge-1"]);
   });
 });

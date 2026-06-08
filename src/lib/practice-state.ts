@@ -10,6 +10,7 @@ export function createInitialPracticeState(now = new Date()): PracticeState {
   return {
     version: VERSION,
     createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
     expiresAt: PERMANENT_EXPIRES_AT,
     records: {},
     mistakes: [],
@@ -34,7 +35,7 @@ export function getPracticeState(storage: Storage | undefined, now = new Date())
       return resetPracticeState(storage, now);
     }
     const migrated = migratePracticeState(parsed);
-    if (!parsed.answerCorrections) {
+    if (!parsed.answerCorrections || !parsed.updatedAt) {
       return persistState(storage, migrated);
     }
     return migrated;
@@ -45,6 +46,10 @@ export function getPracticeState(storage: Storage | undefined, now = new Date())
 
 export function resetPracticeState(storage: Storage, now = new Date()): PracticeState {
   return persistState(storage, createInitialPracticeState(now));
+}
+
+export function replacePracticeState(storage: Storage, state: PracticeState): PracticeState {
+  return persistState(storage, state);
 }
 
 export function markAnswer(
@@ -58,6 +63,7 @@ export function markAnswer(
   const previous = state.records[questionId];
   const next: PracticeState = {
     ...state,
+    updatedAt: now.toISOString(),
     records: {
       ...state.records,
       [questionId]: {
@@ -83,6 +89,7 @@ export function toggleFavorite(storage: Storage, questionId: string, now = new D
 
   return persistState(storage, {
     ...state,
+    updatedAt: now.toISOString(),
     favorites
   });
 }
@@ -91,6 +98,7 @@ export function setLastPractice(storage: Storage, lastPractice: LastPractice, no
   const state = getPracticeState(storage, now);
   return persistState(storage, {
     ...state,
+    updatedAt: now.toISOString(),
     lastPractice
   });
 }
@@ -106,6 +114,7 @@ export function setAnswerCorrection(
   const next = regradeStoredRecord(
     {
       ...state,
+      updatedAt: now.toISOString(),
       answerCorrections: {
         ...state.answerCorrections,
         [questionId]: correctedAnswer
@@ -129,6 +138,7 @@ export function clearAnswerCorrection(
   const next = regradeStoredRecord(
     {
       ...state,
+      updatedAt: now.toISOString(),
       answerCorrections
     },
     questionId,
@@ -143,13 +153,15 @@ function persistState(storage: Storage, state: PracticeState): PracticeState {
   return state;
 }
 
-type StoredPracticeState = Omit<PracticeState, "answerCorrections"> & {
+type StoredPracticeState = Omit<PracticeState, "answerCorrections" | "updatedAt"> & {
   answerCorrections?: Record<string, AnswerValue[]>;
+  updatedAt?: string;
 };
 
 function migratePracticeState(state: StoredPracticeState): PracticeState {
   return {
     ...state,
+    updatedAt: state.updatedAt ?? state.createdAt,
     answerCorrections: state.answerCorrections ?? {}
   };
 }
@@ -192,6 +204,7 @@ function isValidState(value: StoredPracticeState): value is StoredPracticeState 
   return (
     value?.version === VERSION &&
     typeof value.createdAt === "string" &&
+    (value.updatedAt === undefined || typeof value.updatedAt === "string") &&
     typeof value.expiresAt === "string" &&
     typeof value.records === "object" &&
     Array.isArray(value.mistakes) &&
