@@ -1,13 +1,27 @@
 import { NextResponse } from "next/server";
 
 import { isPracticeState, normalizeSyncKey } from "@/lib/cloud-sync";
-import { syncPracticeStateWithCloud } from "@/lib/cloud-sync-server";
+import { DATABASE_ENV_KEYS, getConfiguredDatabaseEnv, syncPracticeStateWithCloud } from "@/lib/cloud-sync-server";
 
 export const runtime = "nodejs";
 
+export function GET() {
+  return NextResponse.json({
+    ok: true,
+    ...getDatabaseDiagnostics()
+  });
+}
+
 export async function POST(request: Request) {
-  if (!process.env.DATABASE_URL) {
-    return NextResponse.json({ error: "未配置云数据库 DATABASE_URL" }, { status: 503 });
+  if (!getConfiguredDatabaseEnv()) {
+    return NextResponse.json(
+      {
+        error: "未配置云数据库 DATABASE_URL/POSTGRES_URL",
+        code: "DATABASE_ENV_MISSING",
+        ...getDatabaseDiagnostics()
+      },
+      { status: 503 }
+    );
   }
 
   let body: unknown;
@@ -37,4 +51,15 @@ export async function POST(request: Request) {
     console.error("Cloud sync failed", error);
     return NextResponse.json({ error: "Cloud sync failed" }, { status: 500 });
   }
+}
+
+function getDatabaseDiagnostics() {
+  const configured = getConfiguredDatabaseEnv();
+
+  return {
+    databaseConfigured: Boolean(configured),
+    databaseEnvKey: configured?.key ?? null,
+    checkedEnvKeys: [...DATABASE_ENV_KEYS],
+    vercelEnv: process.env.VERCEL_ENV ?? null
+  };
 }

@@ -78,9 +78,13 @@ export default function StatsPage() {
           state
         })
       });
-      const payload = (await response.json().catch(() => ({}))) as { error?: string; state?: PracticeState };
+      const payload = (await response.json().catch(() => ({}))) as {
+        code?: string;
+        error?: string;
+        state?: PracticeState;
+      };
       if (!response.ok || !payload.state) {
-        throw new Error(formatSyncError(payload.error));
+        throw new Error(formatSyncError(payload.error, payload.code));
       }
 
       window.localStorage.setItem(SYNC_KEY_STORAGE_KEY, normalized);
@@ -215,9 +219,9 @@ export default function StatsPage() {
   );
 }
 
-function formatSyncError(error: string | undefined): string {
+function formatSyncError(error: string | undefined, code?: string): string {
   if (!error) return "同步失败";
-  if (error.includes("DATABASE_URL")) {
+  if (code === "DATABASE_ENV_MISSING" || error.includes("DATABASE_URL") || error.includes("POSTGRES_URL")) {
     return isLocalhost() ? "本地未配置云数据库" : "云数据库未生效，请重新部署";
   }
   return error;

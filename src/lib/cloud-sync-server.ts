@@ -8,6 +8,8 @@ import type { PracticeState } from "./types";
 let tableReady = false;
 
 type SqlClient = ReturnType<typeof neon<false, false>>;
+export const DATABASE_ENV_KEYS = ["DATABASE_URL", "POSTGRES_URL", "POSTGRES_PRISMA_URL"] as const;
+export type DatabaseEnvKey = (typeof DATABASE_ENV_KEYS)[number];
 
 interface SyncResult {
   state: PracticeState;
@@ -23,10 +25,23 @@ export function hashSyncKey(syncKey: string): string {
   return createHash("sha256").update(normalized).digest("hex");
 }
 
+export function getConfiguredDatabaseUrl(): string | null {
+  return getConfiguredDatabaseEnv()?.url ?? null;
+}
+
+export function getConfiguredDatabaseEnv(): { key: DatabaseEnvKey; url: string } | null {
+  for (const key of DATABASE_ENV_KEYS) {
+    const value = process.env[key]?.trim();
+    if (value) return { key, url: value };
+  }
+
+  return null;
+}
+
 export async function syncPracticeStateWithCloud(syncKey: string, localState: PracticeState): Promise<SyncResult> {
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = getConfiguredDatabaseUrl();
   if (!databaseUrl) {
-    throw new Error("DATABASE_URL is not configured");
+    throw new Error("DATABASE_URL/POSTGRES_URL is not configured");
   }
 
   const sql = neon(databaseUrl);
