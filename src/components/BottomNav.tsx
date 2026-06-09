@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, BookOpen, Home, Star, XSquare } from "lucide-react";
+import { BookOpen, Home, Settings, Star, XSquare } from "lucide-react";
+
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const items = [
   { href: "/", label: "首页", icon: Home },
   { href: "/practice?type=mixed&mode=ordered", label: "刷题", icon: BookOpen },
   { href: "/mistakes", label: "错题", icon: XSquare },
   { href: "/favorites", label: "收藏", icon: Star },
-  { href: "/stats", label: "统计", icon: BarChart3 }
+  { href: "/stats", label: "设置", icon: Settings }
 ];
 
 export function BottomNav() {
@@ -27,6 +29,7 @@ export function BottomNav() {
           </Link>
         );
       })}
+      <ThemeToggle className="bottom-nav__item theme-toggle theme-toggle--nav" showLabel />
     </nav>
   );
 }

@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 
 import { BottomNav } from "@/components/BottomNav";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 import "./globals.css";
 
@@ -30,7 +29,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <div className="app-shell">
           {children}
-          <ThemeToggle />
           <BottomNav />
         </div>
       </body>

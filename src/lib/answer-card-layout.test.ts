@@ -14,4 +14,12 @@ describe("answer card layout", () => {
     expect(css).toMatch(/\.answer-card-grid\s*{[^}]*min-height:\s*0/s);
     expect(css).toMatch(/\.answer-card-grid\s*{[^}]*overflow-y:\s*auto/s);
   });
+
+  it("positions the current question within the answer-card grid without page-level scrolling", () => {
+    const client = fs.readFileSync(path.join(root, "src/components/PracticeClient.tsx"), "utf8");
+
+    expect(client).toContain("answerCardGridRef");
+    expect(client).not.toContain("scrollIntoView");
+    expect(client).toContain("grid.scrollTop");
+  });
 });

@@ -60,6 +60,7 @@ export function PracticeClient({ scope, mode, mistakesOnly = false, favoritesOnl
   const [answerCardJumpValue, setAnswerCardJumpValue] = useState("");
   const [correctionOpen, setCorrectionOpen] = useState(false);
   const [correctionSelected, setCorrectionSelected] = useState<AnswerValue[]>([]);
+  const answerCardGridRef = useRef<HTMLDivElement | null>(null);
   const currentCardRef = useRef<HTMLButtonElement | null>(null);
   const initializedPracticeKeyRef = useRef<string | null>(null);
   const reviewMode = mistakesOnly || favoritesOnly;
@@ -114,7 +115,12 @@ export function PracticeClient({ scope, mode, mistakesOnly = false, favoritesOnl
   useEffect(() => {
     if (!answerCardOpen) return;
     const frame = window.requestAnimationFrame(() => {
-      currentCardRef.current?.scrollIntoView({ block: "center" });
+      const grid = answerCardGridRef.current;
+      const cell = currentCardRef.current;
+      if (!grid || !cell) return;
+
+      const targetTop = cell.offsetTop - grid.clientHeight / 2 + cell.clientHeight / 2;
+      grid.scrollTop = Math.max(0, targetTop);
     });
     return () => window.cancelAnimationFrame(frame);
   }, [answerCardOpen, index]);
@@ -493,7 +499,7 @@ export function PracticeClient({ scope, mode, mistakesOnly = false, favoritesOnl
                 未答
               </span>
             </div>
-            <div className="answer-card-grid" aria-label="答题卡">
+            <div className="answer-card-grid" aria-label="答题卡" ref={answerCardGridRef}>
               {visibleAnswerCardItems.map((item) => (
                 <button
                   aria-label={`跳转到第 ${item.index + 1} 题`}

@@ -80,7 +80,7 @@ export default function StatsPage() {
       });
       const payload = (await response.json().catch(() => ({}))) as { error?: string; state?: PracticeState };
       if (!response.ok || !payload.state) {
-        throw new Error(payload.error ?? "同步失败");
+        throw new Error(formatSyncError(payload.error));
       }
 
       window.localStorage.setItem(SYNC_KEY_STORAGE_KEY, normalized);
@@ -213,6 +213,18 @@ export default function StatsPage() {
       </button>
     </main>
   );
+}
+
+function formatSyncError(error: string | undefined): string {
+  if (!error) return "同步失败";
+  if (error.includes("DATABASE_URL")) {
+    return isLocalhost() ? "本地未配置云数据库" : "云数据库未生效，请重新部署";
+  }
+  return error;
+}
+
+function isLocalhost(): boolean {
+  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
 }
 
 function iconClass(type: QuestionType): string {
