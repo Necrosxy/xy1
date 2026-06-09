@@ -8,7 +8,19 @@ import type { PracticeState } from "./types";
 let tableReady = false;
 
 type SqlClient = ReturnType<typeof neon<false, false>>;
-export const DATABASE_ENV_KEYS = ["DATABASE_URL", "POSTGRES_URL", "POSTGRES_PRISMA_URL"] as const;
+const BASE_DATABASE_ENV_KEYS = [
+  "DATABASE_URL",
+  "POSTGRES_URL",
+  "POSTGRES_PRISMA_URL",
+  "POSTGRES_URL_NON_POOLING",
+  "POSTGRES_URL_NO_SSL",
+  "DATABASE_URL_UNPOOLED",
+  "DATABASE_URL_UNPOOLED_NO_SSL"
+] as const;
+const DATABASE_ENV_PREFIXES = ["", "XY_", "xy_"] as const;
+export const DATABASE_ENV_KEYS = DATABASE_ENV_PREFIXES.flatMap((prefix) =>
+  BASE_DATABASE_ENV_KEYS.map((key) => `${prefix}${key}`)
+);
 export type DatabaseEnvKey = (typeof DATABASE_ENV_KEYS)[number];
 
 interface SyncResult {
