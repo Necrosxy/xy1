@@ -6,9 +6,10 @@ import { useEffect, useMemo, useState } from "react";
 
 import { questionBank } from "@/data/questions";
 import { formatSyncKey, generateSyncKey, normalizeSyncKey, SYNC_KEY_STORAGE_KEY } from "@/lib/cloud-sync";
+import { syncPracticeStateToCloud, type CloudSyncError } from "@/lib/cloud-sync-client";
 import { questionTypeLabel, summarizeRecords } from "@/lib/question-utils";
 import { usePracticeState } from "@/lib/use-practice-state";
-import type { PracticeState, QuestionType } from "@/lib/types";
+import type { QuestionType } from "@/lib/types";
 
 const typeOrder: QuestionType[] = ["judge", "single", "multiple"];
 
@@ -25,7 +26,7 @@ export default function StatsPage() {
     if (!storedKey) return;
 
     setSyncKey(formatSyncKey(storedKey));
-    setSyncMessage("已绑定同步码");
+    setSyncMessage("自动同步已开启");
   }, []);
 
   function clearRecords() {
@@ -68,32 +69,14 @@ export default function StatsPage() {
     setSyncBusy(true);
     setSyncMessage("同步中");
     try {
-      const response = await fetch("/api/sync", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          syncKey: normalized,
-          state
-        })
-      });
-      const payload = (await response.json().catch(() => ({}))) as {
-        code?: string;
-        error?: string;
-        state?: PracticeState;
-      };
-      if (!response.ok || !payload.state) {
-        throw new Error(formatSyncError(payload.error, payload.code));
-      }
-
+      const cloudState = await syncPracticeStateToCloud(normalized, state);
       window.localStorage.setItem(SYNC_KEY_STORAGE_KEY, normalized);
-      replaceState(payload.state);
+      replaceState(cloudState);
       setSyncKey(formatSyncKey(normalized));
       setSyncInput("");
-      setSyncMessage("已同步");
+      setSyncMessage("已同步，自动同步已开启");
     } catch (error) {
-      setSyncMessage(error instanceof Error ? error.message : "同步失败");
+      setSyncMessage(error instanceof Error ? formatSyncError(error.message, (error as CloudSyncError).code) : "同步失败");
     } finally {
       setSyncBusy(false);
     }

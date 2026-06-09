@@ -12,6 +12,16 @@ describe("cloud sync UI", () => {
     expect(statsPage).toContain("generateSyncKey");
     expect(statsPage).toContain("syncWithCloud");
     expect(statsPage).toContain("replaceState");
-    expect(statsPage).toContain("/api/sync");
+    expect(statsPage).toContain("syncPracticeStateToCloud");
+  });
+
+  it("automatically syncs when a sync key is already bound", () => {
+    const hook = fs.readFileSync(path.join(root, "src/lib/use-practice-state.ts"), "utf8");
+    const client = fs.readFileSync(path.join(root, "src/lib/cloud-sync-client.ts"), "utf8");
+
+    expect(hook).toContain("readStoredSyncKey");
+    expect(hook).toContain("syncPracticeStateToCloud");
+    expect(hook).toContain("visibilitychange");
+    expect(client).toContain("/api/sync");
   });
 });
