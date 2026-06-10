@@ -22,6 +22,7 @@ describe("cloud sync UI", () => {
     expect(hook).toContain("readStoredSyncKey");
     expect(hook).toContain("syncPracticeStateToCloud");
     expect(hook).toContain("visibilitychange");
+    expect(hook).toContain("readStoredSyncKey(window.localStorage) !== syncKey");
     expect(client).toContain("/api/sync");
   });
 });

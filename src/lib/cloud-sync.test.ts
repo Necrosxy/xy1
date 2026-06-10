@@ -93,4 +93,25 @@ describe("cloud sync helpers", () => {
     expect(merged.createdAt).toBe("2026-06-01T09:00:00.000Z");
     expect(merged.updatedAt).toBe("2026-06-01T10:00:00.000Z");
   });
+
+  it("merges older cloud states that do not have newer metadata fields", () => {
+    const localStorage = new MemoryStorage();
+    const cloudStorage = new MemoryStorage();
+
+    markAnswer(localStorage, "judge-1", ["true"], true, new Date("2026-06-01T10:00:00.000Z"));
+    markAnswer(cloudStorage, "single-1", ["B"], true, new Date("2026-06-01T09:00:00.000Z"));
+    const cloudState = JSON.parse(cloudStorage.getItem("omnimedia-practice:v1") ?? "{}");
+    delete cloudState.updatedAt;
+    delete cloudState.answerCorrections;
+
+    const merged = mergePracticeStates(
+      JSON.parse(localStorage.getItem("omnimedia-practice:v1") ?? "{}"),
+      cloudState,
+      new Date("2026-06-01T11:00:00.000Z")
+    );
+
+    expect(merged.records["judge-1"]).toBeDefined();
+    expect(merged.records["single-1"]).toBeDefined();
+    expect(merged.answerCorrections).toEqual({});
+  });
 });

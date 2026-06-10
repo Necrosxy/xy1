@@ -23,20 +23,39 @@ export function generateSyncKey(getBytes = createRandomBytes): string {
 }
 
 export function isPracticeState(value: unknown): value is PracticeState {
-  const state = value as PracticeState;
+  return normalizePracticeState(value) !== null;
+}
+
+export function normalizePracticeState(value: unknown): PracticeState | null {
+  const state = value as PracticeState & {
+    answerCorrections?: Record<string, AnswerValue[]>;
+    updatedAt?: string;
+  };
+  if (
+    !(
+      typeof state === "object" &&
+      state !== null &&
+      state.version === VERSION &&
+      typeof state.createdAt === "string" &&
+      (state.updatedAt === undefined || typeof state.updatedAt === "string") &&
+      typeof state.expiresAt === "string" &&
+      typeof state.records === "object" &&
+      !Array.isArray(state.records) &&
+      Array.isArray(state.mistakes) &&
+      Array.isArray(state.favorites) &&
+      (state.answerCorrections === undefined ||
+        (typeof state.answerCorrections === "object" && !Array.isArray(state.answerCorrections)))
+    )
+  ) {
+    return null;
+  }
+
   return (
-    typeof state === "object" &&
-    state !== null &&
-    state.version === VERSION &&
-    typeof state.createdAt === "string" &&
-    typeof state.updatedAt === "string" &&
-    typeof state.expiresAt === "string" &&
-    typeof state.records === "object" &&
-    !Array.isArray(state.records) &&
-    Array.isArray(state.mistakes) &&
-    Array.isArray(state.favorites) &&
-    typeof state.answerCorrections === "object" &&
-    !Array.isArray(state.answerCorrections)
+    {
+      ...state,
+      updatedAt: state.updatedAt ?? state.createdAt,
+      answerCorrections: state.answerCorrections ?? {}
+    }
   );
 }
 
@@ -46,20 +65,23 @@ export function mergePracticeStates(
   now = new Date()
 ): PracticeState {
   const updatedAt = now.toISOString();
-  if (!cloudState) {
+  const normalizedLocalState = normalizePracticeState(localState) ?? localState;
+  const normalizedCloudState = normalizePracticeState(cloudState);
+
+  if (!normalizedCloudState) {
     return {
-      ...localState,
+      ...normalizedLocalState,
       updatedAt,
-      mistakes: deriveMistakes(localState.records)
+      mistakes: deriveMistakes(normalizedLocalState.records)
     };
   }
 
-  const newerState = newestState(localState, cloudState);
-  const records = mergeRecords(localState.records, cloudState.records);
+  const newerState = newestState(normalizedLocalState, normalizedCloudState);
+  const records = mergeRecords(normalizedLocalState.records, normalizedCloudState.records);
 
   return {
     version: VERSION,
-    createdAt: earliestIso(localState.createdAt, cloudState.createdAt),
+    createdAt: earliestIso(normalizedLocalState.createdAt, normalizedCloudState.createdAt),
     updatedAt,
     expiresAt: PERMANENT_EXPIRES_AT,
     records,

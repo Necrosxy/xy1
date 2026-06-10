@@ -45,6 +45,10 @@ export function usePracticeState() {
     autoSyncingRef.current = true;
     void syncPracticeStateToCloud(syncKey, stateToSync)
       .then((cloudState) => {
+        if (readStoredSyncKey(window.localStorage) !== syncKey) {
+          return;
+        }
+
         const nextState = replacePracticeState(window.localStorage, cloudState);
         lastAutoSyncedSignatureRef.current = stateSignature(nextState);
         setState(nextState);
