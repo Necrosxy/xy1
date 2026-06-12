@@ -87,5 +87,6 @@ describe("cloud sync server wiring", () => {
     expect(route).toContain("POSTGRES_URL");
     expect(route).toContain("DATABASE_ENV_MISSING");
     expect(route).toContain("databaseEnvKey");
+    expect(fs.readFileSync(path.join(root, "src/lib/cloud-sync-server.ts"), "utf8")).toContain("mergedRecordCount");
   });
 });

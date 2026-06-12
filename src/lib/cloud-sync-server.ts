@@ -26,6 +26,14 @@ export type DatabaseEnvKey = (typeof DATABASE_ENV_KEYS)[number];
 interface SyncResult {
   state: PracticeState;
   created: boolean;
+  meta: {
+    localRecordCount: number;
+    cloudRecordCount: number;
+    mergedRecordCount: number;
+    localUpdatedAt: string;
+    cloudUpdatedAt: string | null;
+    mergedUpdatedAt: string;
+  };
 }
 
 export function hashSyncKey(syncKey: string): string {
@@ -82,7 +90,15 @@ export async function syncPracticeStateWithCloud(syncKey: string, localState: Pr
 
   return {
     state: mergedState,
-    created: !cloudState
+    created: !cloudState,
+    meta: {
+      localRecordCount: countRecords(localState),
+      cloudRecordCount: cloudState ? countRecords(cloudState) : 0,
+      mergedRecordCount: countRecords(mergedState),
+      localUpdatedAt: localState.updatedAt,
+      cloudUpdatedAt: cloudState?.updatedAt ?? null,
+      mergedUpdatedAt: mergedState.updatedAt
+    }
   };
 }
 
@@ -110,4 +126,8 @@ function parseCloudState(value: unknown): PracticeState | null {
   } catch {
     return null;
   }
+}
+
+function countRecords(state: PracticeState): number {
+  return Object.keys(state.records).length;
 }

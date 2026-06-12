@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { questionBank } from "@/data/questions";
 import { formatSyncKey, generateSyncKey, normalizeSyncKey, SYNC_KEY_STORAGE_KEY } from "@/lib/cloud-sync";
-import { syncPracticeStateToCloud, type CloudSyncError } from "@/lib/cloud-sync-client";
+import { syncPracticeStateToCloudWithMeta, type CloudSyncError, type CloudSyncResult } from "@/lib/cloud-sync-client";
 import { questionTypeLabel, summarizeRecords } from "@/lib/question-utils";
 import { usePracticeState } from "@/lib/use-practice-state";
 import type { QuestionType } from "@/lib/types";
@@ -69,12 +69,12 @@ export default function StatsPage() {
     setSyncBusy(true);
     setSyncMessage("同步中");
     try {
-      const cloudState = await syncPracticeStateToCloud(normalized, state);
+      const result = await syncPracticeStateToCloudWithMeta(normalized, state);
       window.localStorage.setItem(SYNC_KEY_STORAGE_KEY, normalized);
-      replaceState(cloudState);
+      replaceState(result.state);
       setSyncKey(formatSyncKey(normalized));
       setSyncInput("");
-      setSyncMessage("已同步，自动同步已开启");
+      setSyncMessage(formatSyncSuccess(result));
     } catch (error) {
       setSyncMessage(error instanceof Error ? formatSyncError(error.message, (error as CloudSyncError).code) : "同步失败");
     } finally {
@@ -208,6 +208,12 @@ function formatSyncError(error: string | undefined, code?: string): string {
     return isLocalhost() ? "本地未配置云数据库" : "云数据库未生效，请重新部署";
   }
   return error;
+}
+
+function formatSyncSuccess(result: CloudSyncResult): string {
+  if (!result.meta) return "已同步，自动同步已开启";
+
+  return `已同步：本机 ${result.meta.localRecordCount} / 云端 ${result.meta.cloudRecordCount} / 合并 ${result.meta.mergedRecordCount}`;
 }
 
 function isLocalhost(): boolean {

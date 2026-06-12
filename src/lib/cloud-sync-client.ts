@@ -7,7 +7,23 @@ export interface CloudSyncError extends Error {
   code?: string;
 }
 
+export interface CloudSyncResult {
+  state: PracticeState;
+  meta?: {
+    localRecordCount: number;
+    cloudRecordCount: number;
+    mergedRecordCount: number;
+    localUpdatedAt: string;
+    cloudUpdatedAt: string | null;
+    mergedUpdatedAt: string;
+  };
+}
+
 export async function syncPracticeStateToCloud(syncKey: string, state: PracticeState): Promise<PracticeState> {
+  return (await syncPracticeStateToCloudWithMeta(syncKey, state)).state;
+}
+
+export async function syncPracticeStateToCloudWithMeta(syncKey: string, state: PracticeState): Promise<CloudSyncResult> {
   const normalized = normalizeSyncKey(syncKey);
   if (!normalized) {
     throw createCloudSyncError("同步码无效");
@@ -26,6 +42,7 @@ export async function syncPracticeStateToCloud(syncKey: string, state: PracticeS
   const payload = (await response.json().catch(() => ({}))) as {
     code?: string;
     error?: string;
+    meta?: CloudSyncResult["meta"];
     state?: PracticeState;
   };
 
@@ -33,7 +50,10 @@ export async function syncPracticeStateToCloud(syncKey: string, state: PracticeS
     throw createCloudSyncError(payload.error ?? "同步失败", payload.code);
   }
 
-  return payload.state;
+  return {
+    state: payload.state,
+    meta: payload.meta
+  };
 }
 
 export function readStoredSyncKey(storage: Storage): string | null {

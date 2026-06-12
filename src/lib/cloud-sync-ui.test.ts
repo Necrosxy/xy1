@@ -12,7 +12,9 @@ describe("cloud sync UI", () => {
     expect(statsPage).toContain("generateSyncKey");
     expect(statsPage).toContain("syncWithCloud");
     expect(statsPage).toContain("replaceState");
-    expect(statsPage).toContain("syncPracticeStateToCloud");
+    expect(statsPage).toContain("syncPracticeStateToCloudWithMeta");
+    expect(statsPage).toContain("formatSyncSuccess");
+    expect(statsPage).toContain("本机 ${result.meta.localRecordCount}");
   });
 
   it("automatically syncs when a sync key is already bound", () => {
